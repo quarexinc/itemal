@@ -14,6 +14,8 @@ import services
 
 _PREFIX = {"wide": "", "mobile": "mobil-", "card": "kart-"}
 _DIR = core.BASE_DIR / "public" / "static" / "kategori"
+# Vercel'de public/ yalnizca CDN'e gider, islev paketinde yoktur: ayni dosyalar static_src/ altinda da bulunur
+_DIRS = (_DIR, core.BASE_DIR / "static_src" / "kategori")
 _SLUG_CLEAN = re.compile(r"[^a-z0-9-]")
 
 
@@ -22,12 +24,15 @@ def _default_file(kind, slug):
     """(dosya adı, sürüm) döner; dosya yoksa genel yedeğe düşer."""
     prefix = _PREFIX.get(kind, "")
     name = prefix + slug + ".webp"
-    if not slug or not (_DIR / name).is_file():
+    if not slug or not any((d / name).is_file() for d in _DIRS):
         name = prefix + "genel.webp"
-    try:
-        version = int((_DIR / name).stat().st_mtime)
-    except OSError:
-        version = 0
+    version = 0
+    for d in _DIRS:
+        try:
+            version = int((d / name).stat().st_mtime)
+            break
+        except OSError:
+            continue
     return name, version
 
 

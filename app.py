@@ -1177,7 +1177,22 @@ with app.app_context():                      # rota adıyla çakışan eski kull
 
 import demo  # noqa: E402
 
-app.demo_thread = None if core.SERVERLESS else demo.start_autoseed(app)     # arka plan iş parçacığı serverless'ta yok
+if core.SERVERLESS:
+    # arka plan iş parçacığı serverless'ta yok: demo veri, her sıcak işlevin ilk isteğinde (bir kez, kilitli) yüklenir
+    app.demo_thread = None
+    _demo_checked = {"done": False}
+
+    @app.before_request
+    def _lazy_demo_seed():
+        if _demo_checked["done"] or os.getenv("AUTO_DEMO", "1") != "1":
+            return
+        _demo_checked["done"] = True
+        try:
+            demo.autoseed()
+        except Exception as err:  # pragma: no cover
+            print("itemal: demo veri yüklenemedi:", err, flush=True)
+else:
+    app.demo_thread = demo.start_autoseed(app)
 
 if __name__ == "__main__":
     app.run(
