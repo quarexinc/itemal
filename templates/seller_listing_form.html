@@ -1,0 +1,36 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import ic with context %}
+{% from "_doping.html" import doping_picker with context %}
+{% block title %}{{ 'İlanı Düzenle' if item else 'Yeni İlan' }}{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>{{ 'İlanı düzenle' if item else 'Yeni ilan' }}</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('seller.listings') }}">İlanlarım</a></div>
+<div class="card">
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('seller.listing_edit', lid=item.id) if item else url_for('seller.listing_new') }}">
+    {{ csrf_field() }}
+    <div class="field"><label for="title">İlan başlığı</label><input type="text" id="title" name="title" value="{{ form.title }}" required minlength="5" maxlength="90" placeholder="Örn. Steam 250 TL Cüzdan Kodu - Anında Teslim"></div>
+    <div class="form-row">
+      <div class="field"><label for="cat-select">Kategori</label>
+        <select id="cat-select" name="category_id" required>{% for c in cats %}<option value="{{ c.id }}" data-rate="{{ rates[c.id][0] }}" {{ 'selected' if form.category_id|string == c.id|string }}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="price-input">Fiyat (TL)</label><input type="text" inputmode="decimal" id="price-input" name="price" value="{{ form.price }}" required placeholder="250,00"></div>
+    </div>
+    <div class="field"><label for="old_price">Eski fiyat (isteğe bağlı)</label><input type="text" inputmode="decimal" id="old_price" name="old_price" value="{{ form.old_price }}" placeholder="300,00"><div class="hint">Doldurursan kartta üstü çizili gösterilir ve indirim yüzdesi hesaplanır. Güncel fiyattan yüksek olmalı.</div></div>
+    <div class="calc mb">
+      <div><small>Komisyon oranın</small><b id="rate-preview">-</b></div>
+      <div><small>Satış başına kesinti</small><b id="fee-preview">-</b></div>
+      <div><small>Eline geçecek net tutar</small><b id="net-preview">-</b></div>
+    </div>
+    <div class="field"><label for="phone">Telefon numaran</label><input type="tel" id="phone" name="phone" value="{{ form.phone if form.phone is defined else me.phone }}" required maxlength="20" placeholder="+90 5xx xxx xx xx"><div class="hint">Yalnızca yönetim ekibi görür; alıcılara gösterilmez.</div></div>
+    <div class="field"><label for="description">Açıklama</label><textarea id="description" name="description" required minlength="20" maxlength="2000" style="min-height:150px" placeholder="Kodun ne olduğunu, hangi bölge/hesap için geçerli olduğunu ve nasıl kullanılacağını anlat.">{{ form.description }}</textarea><div class="hint">En az 20 karakter. Ayrıntılı açıklama daha çok güven ve satış getirir.</div></div>
+    <div class="field"><label for="cover">Kapak görseli {% if cfg.require_cover == '1' and not (item and item.cover) %}(zorunlu){% endif %}</label>
+      <input type="file" id="cover" name="cover" accept="image/jpeg,image/png,image/webp" data-preview="#cover-preview" {{ 'required' if cfg.require_cover == '1' and not (item and item.cover) }}>
+      <div class="hint">JPG, PNG veya WEBP; en fazla 6 MB, en az 320 piksel. 16:10 oranında yatay görseller en iyi görünür.</div>
+      <img id="cover-preview" class="preview-img" alt="Kapak önizleme" {% if item and item.cover %}src="{{ cover_url(item.cover) }}"{% else %}hidden{% endif %}></div>
+    {% if not item %}
+    <div class="field"><label for="codes">E-pin kodları (her satıra bir kod)</label><textarea id="codes" name="codes" required style="min-height:150px" class="mono" data-count-lines="#code-count">{{ form.codes }}</textarea><div class="hint"><span id="code-count">0</span> benzersiz kod algılandı. Tekrar eden satırlar otomatik atlanır.</div></div>
+    {% endif %}
+    {% if not item %}{{ doping_picker(doping, dsel, me.balance, dkey) }}{% endif %}
+    <button class="btn" type="submit">{{ 'Değişiklikleri Kaydet' if item else 'İlanı Yayınla' }}</button>
+    {% if item %}<a class="btn btn-ghost" href="{{ url_for('seller.stock', lid=item.id) }}">Stok yönetimi</a><a class="btn btn-ghost" href="{{ url_for('seller.doping_buy', lid=item.id) }}">{{ ic('flame') }} Doping al</a>{% endif %}
+  </form>
+</div>
+{% endblock %}

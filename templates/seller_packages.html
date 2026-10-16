@@ -1,0 +1,69 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import ic, empty with context %}
+{% block title %}Paketler{% endblock %}
+{% block panel %}
+<div class="page-h">
+  <div><div class="crumb">Mağaza</div><h1>Mağaza paketleri</h1></div>
+  <div class="row">
+    <span class="chip" title="Kullanılabilir bakiye">{{ ic('wallet') }}Bakiye: <b>{{ balance|money }}</b></span>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('balance') }}">{{ ic('plus') }}Bakiye yükle</a>
+  </div>
+</div>
+<p class="muted pk-lead">Paketler bakiyenden satın alınır ve satın aldığın anda etkinleşir. Mavi tik mağaza adının yanında ilan kartlarında, ilan sayfasında, mağaza sayfanda, yorumlarda ve sohbetlerde görünür. Süreli paketleri tekrar alırsan süre uzar.</p>
+
+{% if active_list %}
+<div class="card pk-active mb">
+  <div class="card-h"><h3>{{ ic('check-circle') }} Aktif paketlerin</h3><span class="chip">{{ active_list|length }}</span></div>
+  <div class="row">
+    {% for a in active_list %}<span class="pk-chip" style="--c:{{ a.color }}"><b>{{ a.name }}</b><em>{% if a.permanent %}Kalıcı{% else %}{{ a.until|dt(false) }} tarihine kadar{% endif %}</em></span>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="pk-grid">
+  {% for c in cards %}{% set p = c.p %}
+  <article class="pk-card{{ ' owned' if c.owned }}{{ ' hot' if p.tier == 'diamond' }}{{ ' tier-gold' if p.tier == 'gold' }}" style="--c:{{ c.color }}" id="paket-{{ p.id }}">
+    {% if p.tier == 'diamond' %}<span class="pk-ribbon">En kapsamlı</span>{% endif %}
+    <div class="pk-top">
+      <span class="pk-ico">{{ c.icon }}</span>
+      <div><h3>{{ p.name }}</h3><p class="muted small">{{ p.tagline }}</p></div>
+    </div>
+    {% if p.tier == 'diamond' %}<div class="pk-perks"><span>{{ ic('gem') }}Elmas rozet</span><span>{{ ic('gift') }}{{ p.giveaway_slots }} ek çekiliş</span><span>{{ ic('palette') }}Tüm temalar</span><span>{{ ic('life-buoy') }}Öncelikli destek</span></div>{% endif %}
+    <div class="pk-price"><b>{{ p.price|money }}</b><span>{% if p.duration_days %}/ {{ p.duration_days }} gün{% else %}tek seferlik{% endif %}</span></div>
+    <ul class="pk-feats">
+      {% for f in c.features %}<li>{{ ic('check') }}<span>{{ f }}</span></li>{% endfor %}
+    </ul>
+    {% if p.description %}<p class="pk-desc small muted">{{ p.description }}</p>{% endif %}
+    <div class="pk-foot">
+      {% if c.owned %}<div class="pk-own">{{ ic('check-circle') }}<span>Aktif - {% if c.owned.permanent %}kalıcı{% else %}bitiş {{ c.owned.until|dt(false) }}{% endif %}</span></div>{% endif %}
+      {% if c.locked %}
+        <button class="btn btn-ghost btn-block" type="button" disabled>Kalıcı olarak sahipsin</button>
+      {% elif not c.can_afford %}
+        <a class="btn btn-line btn-block" href="{{ url_for('balance') }}">{{ ic('wallet') }}Bakiye yükle ({{ c.missing|money }} eksik)</a>
+      {% else %}
+        <form method="post" action="{{ url_for('seller.package_buy', pid=p.id) }}" data-confirm="{{ p.name }} paketi için {{ p.price|money }} bakiyenden düşülecek. Onaylıyor musun?">
+          {{ csrf_field() }}
+          <button class="btn btn-block{{ ' shine' if p.tier == 'diamond' }}" type="submit">{% if c.owned %}Süreyi uzat{% else %}Satın al{% endif %} - {{ p.price|money }}</button>
+        </form>
+      {% endif %}
+    </div>
+  </article>
+  {% else %}
+  <div class="card">{{ empty('Şu anda satışta paket yok') }}</div>
+  {% endfor %}
+</div>
+
+<div class="card mt">
+  <div class="card-h"><h3>Paket geçmişin</h3></div>
+  {% if history %}
+  <div class="table-wrap"><table>
+    <tr><th>Tarih</th><th>Paket</th><th class="right">Tutar</th><th>Başlangıç</th><th>Bitiş</th><th>Durum</th></tr>
+    {% for h in history %}<tr>
+      <td class="nowrap">{{ h.created_at|dt }}</td><td><b>{{ h.name }}</b>{% if h.source == 'admin' %} <span class="muted small">(yönetici verdi)</span>{% endif %}</td>
+      <td class="right nowrap">{{ h.price|money }}</td><td class="nowrap">{{ h.starts_at|dt(false) }}</td><td class="nowrap">{% if h.ends_at %}{{ h.ends_at|dt(false) }}{% else %}Kalıcı{% endif %}</td>
+      <td>{% if h.state == 'active' %}<span class="badge b-ok">Aktif</span>{% elif h.state == 'queued' %}<span class="badge b-info">Sırada</span>{% elif h.state == 'cancelled' %}<span class="badge b-bad">İptal</span>{% else %}<span class="badge b-muted">Bitti</span>{% endif %}</td>
+    </tr>{% endfor %}
+  </table></div>
+  {% else %}{{ empty('Henüz paket almadın', 'Yukarıdan bir paket seçerek mağazanı öne çıkarabilirsin.') }}{% endif %}
+</div>
+{% endblock %}

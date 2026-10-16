@@ -1,0 +1,34 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import badge, empty %}
+{% block title %}Para Çek{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Para çek</h1></div>
+<div class="grid g3 mb">
+  <div class="stat good"><div class="k">Çekilebilir tutar</div><div class="v">{{ available|money }}</div><div class="s">Toplam bakiye: {{ me.balance|money }}</div></div>
+  <div class="stat"><div class="k">Minimum çekim</div><div class="v">{{ min_w|money }}</div></div>
+  <div class="stat"><div class="k">İşlem kesintisi</div><div class="v">%{{ fee_rate }}</div></div>
+</div>
+{% if earnings_only %}<div class="notice">Güvenlik gereği yalnızca <b>satış kazançların</b> çekilebilir. Yüklediğin bakiye site içi alışveriş içindir.</div>{% endif %}
+
+<div class="card mb">
+  <form method="post" action="{{ url_for('withdraw') }}" data-confirm="Çekim talebi oluşturulsun mu? Tutar bakiyenden hemen düşülür.">
+    {{ csrf_field() }}
+    <div class="form-row">
+      <div class="field"><label for="method">Yöntem</label><select id="method" name="method" data-last='{{ last_accounts|tojson }}'>{% for m in methods %}<option>{{ m }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="amount">Tutar (TL)</label><input type="text" inputmode="decimal" id="amount" name="amount" required placeholder="{{ min_w|plain }}">
+        <div class="quick"><button type="button" data-fill="{{ available|plain }}" data-target="#amount">Tümü</button></div></div>
+    </div>
+    <div class="field"><label for="account_info">IBAN / Papara no / cüzdan adresi</label><textarea id="account_info" name="account_info" required maxlength="300" style="min-height:80px"></textarea>
+      <div class="hint">Hesap sahibi adı, kimlik doğrulamandaki adla aynı olmalıdır. Önceki çekimlerindeki hesap otomatik doldurulur.</div></div>
+    <button class="btn" type="submit">Çekim Talebi Oluştur</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Çekim geçmişi</h2>
+  {% if history %}<div class="table-wrap"><table>
+    <tr><th>No</th><th>Tarih</th><th>Yöntem</th><th class="right">Tutar</th><th class="right">Kesinti</th><th class="right">Net</th><th>Durum</th></tr>
+    {% for w in history %}<tr><td>#{{ w.id }}</td><td>{{ w.created_at|dt }}</td><td>{{ w.method }}</td><td class="right nowrap">{{ w.amount|money }}</td><td class="right nowrap">{{ w.fee|money }}</td><td class="right nowrap">{{ w.net|money }}</td><td>{{ badge(w.status) }}{% if w.admin_note %}<div class="muted small">{{ w.admin_note }}</div>{% endif %}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Henüz çekim talebin yok') }}{% endif %}
+</div>
+{% endblock %}

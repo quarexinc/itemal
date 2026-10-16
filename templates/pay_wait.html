@@ -1,0 +1,50 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import badge, ic with context %}
+{% block title %}Ödeme Durumu{% endblock %}
+{% block head_extra %}{% if d.status == 'pending' %}<meta http-equiv="refresh" content="10">{% endif %}{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Ödeme durumu</h1><span class="chip">Bakiyen: {{ balance_now|money }}</span></div>
+
+<div class="card cp-state mb">
+  {% if d.status == 'pending' %}
+    <div class="cp-spin" aria-hidden="true"></div>
+    <h2>Ödemen işleniyor</h2>
+    <p class="muted">Ödeme sayfasında işlemi tamamla. Ödemen yönetim tarafından kontrol edilince <b>{{ d.amount|money }}</b> bakiyene eklenecek. Bu sayfa kendiliğinden yenilenir, kapatabilirsin; sonuç bildirim olarak da gelir.</p>
+    {% if d.link_url %}<p><a class="btn" href="{{ d.link_url }}" target="_blank" rel="noopener noreferrer nofollow">Ödeme sayfasını aç</a></p>{% endif %}
+  {% elif d.status == 'approved' %}
+    <div class="cp-done ok">{{ ic('check') }}</div>
+    <div class="pay-plus">{{ d.amount|smoney }}</div>
+    <h2>Bakiyeniz onaylandı</h2>
+    <p class="muted">Ödemen onaylandı, tutar hesabına eklendi. Güncel bakiyen: <b>{{ balance_now|money }}</b></p>
+    <p><a class="btn" href="{{ url_for('listings') }}">Alışverişe başla</a></p>
+  {% else %}
+    <div class="cp-done bad">{{ ic('x') }}</div>
+    <h2>Talep sonuçlanmadı</h2>
+    <p class="muted">{{ d.admin_note or 'Bu ödeme talebi onaylanmadı.' }} Ödemeyi yaptıysan destek talebi açabilirsin.</p>
+    <p><a class="btn btn-ghost" href="{{ url_for('balance') }}">Bakiye Yükle'ye dön</a> <a class="btn btn-ghost" href="{{ url_for('ticket_new') }}">Destek talebi</a></p>
+  {% endif %}
+  <dl class="kv mt">
+    <dt>Talep no</dt><dd>#{{ d.id }}</dd>
+    <dt>Ödeme</dt><dd>{{ d.method_name }}</dd>
+    <dt>Tutar</dt><dd>{{ d.amount|money }}</dd>
+    <dt>Durum</dt><dd>{{ badge(d.status) }}</dd>
+    <dt>Tarih</dt><dd>{{ d.created_at|dt }}</dd>
+  </dl>
+</div>
+
+{% if d.status == 'pending' %}
+<div class="card mb">
+  <h3>Onayı hızlandır</h3>
+  <p class="muted small">Ödemeyi yaptıktan sonra ödeme numarasını, dekont numarasını veya ödemede kullandığın ad soyadı yaz; yönetim ödemeni daha çabuk eşleştirir.</p>
+  <form method="post" action="{{ url_for('paylink.info', did=d.id) }}">
+    {{ csrf_field() }}
+    <div class="field"><label for="pw_ref">Ödeme / dekont no veya ad soyad</label><input type="text" id="pw_ref" name="reference" value="{{ d.reference }}" required minlength="3" maxlength="120"></div>
+    <div class="field"><label for="pw_note">Not (isteğe bağlı)</label><input type="text" id="pw_note" name="note" value="{{ d.note }}" maxlength="300"></div>
+    <button class="btn" type="submit">Bilgiyi Gönder</button>
+  </form>
+</div>
+<form method="post" action="{{ url_for('paylink.cancel', did=d.id) }}" data-confirm="Ödemeyi yapmadıysan talebi iptal et. Ödeme yaptıysan iptal etme. Devam edilsin mi?">
+  {{ csrf_field() }}<button class="btn btn-ghost btn-sm" type="submit">Talebi iptal et</button>
+</form>
+{% endif %}
+{% endblock %}

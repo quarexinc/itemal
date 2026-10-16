@@ -1,0 +1,27 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}Stok - {{ l.title }}{% endblock %}
+{% block panel %}
+<div class="page-h"><div><h1>Stok yönetimi</h1><span class="muted">{{ l.title }}</span></div><a class="btn btn-ghost btn-sm" href="{{ url_for('seller.listings') }}">İlanlarım</a></div>
+<div class="grid g3 mb">
+  <div class="stat good"><div class="k">Satışa hazır kod</div><div class="v">{{ counts.available }}</div></div>
+  <div class="stat"><div class="k">Satılan kod</div><div class="v">{{ counts.sold }}</div></div>
+  <div class="stat"><div class="k">Fiyat</div><div class="v">{{ l.price|money }}</div></div>
+</div>
+<div class="card mb">
+  <h3 class="mt0">Kod ekle</h3>
+  <form method="post" action="{{ url_for('seller.stock', lid=l.id) }}">
+    {{ csrf_field() }}
+    <div class="field"><textarea name="codes" required class="mono" style="min-height:140px" placeholder="Her satıra bir kod" data-count-lines="#code-count"></textarea><div class="hint"><span id="code-count">0</span> benzersiz kod algılandı. Aynı ilanda zaten olan kodlar atlanır.</div></div>
+    <button class="btn" type="submit">Stoğa Ekle</button>
+  </form>
+</div>
+<div class="card">
+  <h3 class="mt0">Satılmamış kodlar</h3>
+  {% if page.rows %}<div class="table-wrap"><table>
+    <tr><th>Kod</th><th>Eklenme</th><th></th></tr>
+    {% for c in page.rows %}<tr><td class="mono">{{ c.code }}</td><td class="nowrap muted">{{ c.created_at|dt }}</td>
+      <td class="actions"><form method="post" action="{{ url_for('seller.stock_delete', lid=l.id, cid=c.id) }}" data-confirm="Bu kod silinsin mi?">{{ csrf_field() }}<button class="btn btn-danger btn-sm" type="submit">Sil</button></form></td></tr>{% endfor %}
+  </table></div>{{ pager(page) }}{% else %}{{ empty('Stokta kod yok', 'Yukarıdan kod ekleyerek ilanı yeniden satışa hazırla.') }}{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import badge, pager, empty, status_tabs %}
+{% block title %}Çekim Talepleri{% endblock %}
+{% block heading %}Çekim talepleri{% endblock %}
+{% block panel %}
+{{ status_tabs('admin.withdrawals', status, counts) }}
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>Kullanıcı</th><th class="right">Tutar</th><th class="right">Kesinti</th><th class="right">Ödenecek</th><th>Hesap bilgisi</th><th>Durum</th><th>İşlem</th></tr>
+  {% for w in page.rows %}<tr>
+    <td>#{{ w.id }}</td><td class="nowrap">{{ w.created_at|dt }}</td>
+    <td><a href="{{ url_for('admin.user', uid=w.user_id) }}">{{ w.username }}</a><div class="muted small">Kimlik adı: {{ w.kyc_name or '-' }}</div></td>
+    <td class="right nowrap">{{ w.amount|money }}</td><td class="right nowrap muted">{{ w.fee|money }}</td><td class="right nowrap"><b>{{ w.net|money }}</b></td>
+    <td><b>{{ w.method }}</b><div class="mono small pre">{{ w.account_info }}</div></td>
+    <td>{{ badge(w.status) }}{% if w.admin_note %}<div class="muted small">{{ w.admin_note }}</div>{% endif %}</td>
+    <td class="actions">{% if w.status == 'pending' %}
+      <form method="post" action="{{ url_for('admin.withdrawal_action', wid=w.id) }}" class="mini-form">{{ csrf_field() }}
+        <input type="text" name="note" placeholder="Not / dekont no" maxlength="300">
+        <button class="btn btn-ok btn-sm" name="action" value="approve" type="submit" data-confirm="Ödemeyi yaptığını onaylıyor musun? Kullanıcıya {{ w.net|money }} ödenecek.">Onayla</button>
+        <button class="btn btn-danger btn-sm" name="action" value="reject" type="submit" data-confirm="Talep reddedilip tutar iade edilsin mi?">Reddet</button>
+      </form>{% endif %}</td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Bu durumda çekim talebi yok') }}</div>{% endif %}
+{% endblock %}

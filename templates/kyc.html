@@ -1,0 +1,42 @@
+{% extends "account_base.html" %}
+{% block title %}Kimlik Doğrulama{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Kimlik doğrulama</h1><span class="badge b-{{ me.kyc_status|sclass }}">{{ me.kyc_status|slabel }}</span></div>
+
+<p class="muted mb">Ödemenin doğru kişiye yapılabilmesi için bilgilerini bir kez doğruluyoruz. Onaylanınca çekim talebini oluşturabilirsin.</p>
+{% if me.kyc_status == 'approved' %}
+<div class="notice ok">Bilgilerin doğrulandı. <a href="{{ url_for('withdraw') }}">Çekim sayfasına dön</a>.</div>
+{% elif me.kyc_status == 'pending' %}
+<div class="notice">Başvurun inceleniyor. Sonuç hesabına yansıyacak; genellikle kısa sürede tamamlanır.</div>
+{% else %}
+{% if last and last.status == 'rejected' %}<div class="notice bad"><b>Önceki başvurun reddedildi:</b> {{ last.admin_note or 'Bilgiler doğrulanamadı.' }}<br>Aşağıdaki bilgilerle yeniden başvurabilirsin.</div>{% endif %}
+<div class="card mb">
+  <h3 class="mt0">Görsel kalitesi için ipuçları</h3>
+  <ul class="muted">
+    <li>Kimliğin tamamı çerçevede, dört köşesi görünür olsun.</li>
+    <li>Işık yeterli, yansıma ve parlama olmasın; yazılar net okunsun.</li>
+    <li>Selfie'de yüzün ve kimlik aynı karede, kimlik üzerindeki yazılar okunabilir olsun.</li>
+    <li>Düzenlenmiş, ekran görüntüsü veya kopya görseller reddedilir. Görseller yalnızca doğrulama için kullanılır ve konum bilgisi silinerek saklanır.</li>
+  </ul>
+</div>
+<div class="card">
+  <form method="post" action="{{ url_for('kyc') }}" enctype="multipart/form-data">
+    {{ csrf_field() }}
+    <div class="form-row">
+      <div class="field"><label for="doc_type">Belge türü</label><select id="doc_type" name="doc_type"><option value="kimlik">T.C. kimlik kartı</option><option value="ehliyet">Sürücü belgesi</option></select></div>
+      <div class="field"><label for="full_name">Ad soyad (belgedeki gibi)</label><input type="text" id="full_name" name="full_name" required maxlength="80" autocomplete="name"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="id_number">T.C. kimlik numarası</label><input type="text" id="id_number" name="id_number" required inputmode="numeric" pattern="[0-9]{11}" maxlength="11"></div>
+      <div class="field"><label for="birth_date">Doğum tarihi</label><input type="date" id="birth_date" name="birth_date" required></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="id_front">Belgenin ön yüzü</label><input type="file" id="id_front" name="id_front" accept="image/jpeg,image/png,image/webp" required></div>
+      <div class="field"><label for="id_back">Belgenin arka yüzü</label><input type="file" id="id_back" name="id_back" accept="image/jpeg,image/png,image/webp" required></div>
+    </div>
+    <div class="field"><label for="selfie">Belgeyle birlikte selfie</label><input type="file" id="selfie" name="selfie" accept="image/jpeg,image/png,image/webp" required><div class="hint">JPG, PNG veya WEBP. Her görsel en fazla 8 MB, en az 300 piksel.</div></div>
+    <button class="btn" type="submit">Başvuruyu Gönder</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import badge, pager, empty %}
+{% block title %}Kullanıcılar{% endblock %}
+{% block heading %}Kullanıcılar{% endblock %}
+{% block panel %}
+<div class="spread mb">
+  <form class="filters" style="margin:0;flex:1" method="get" action="{{ url_for('admin.users') }}">
+    <div class="field grow"><label for="q">Ara</label><input type="search" id="q" name="q" value="{{ text }}" placeholder="Kullanıcı adı, e-posta veya ID"></div>
+    <div class="field"><label for="filtre">Filtre</label><select id="filtre" name="filtre"><option value="">Hepsi</option>
+      {% for k, v in [('seller', 'Satıcılar'), ('banned', 'Engelliler'), ('pending', 'Kimlik: beklemede'), ('approved', 'Kimlik: onaylı'), ('rejected', 'Kimlik: reddedilmiş'), ('none', 'Kimlik: yok')] %}<option value="{{ k }}" {{ 'selected' if flt == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="field"><button class="btn" type="submit">Filtrele</button></div>
+  </form>
+  <a class="btn" href="{{ url_for('admin.user_new') }}">Üye Oluştur</a>
+</div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Kullanıcı</th><th>Roller</th><th>Kimlik</th><th class="right">Bakiye</th><th class="right">Alış / Satış</th><th>Kayıt</th><th></th></tr>
+  {% for u in page.rows %}<tr>
+    <td>#{{ u.id }}</td>
+    <td><a href="{{ url_for('admin.user', uid=u.id) }}"><b>{{ u.username }}</b></a>{{ pkg_marks(u.id) }}<div class="muted small">{{ u.email }}</div></td>
+    <td>{% if u.is_seller %}<span class="badge b-ok">Satıcı</span>{% endif %} {% if u.is_banned %}<span class="badge b-bad">Engelli</span>{% endif %}</td>
+    <td>{{ badge(u.kyc_status) }}</td>
+    <td class="right nowrap">{{ u.balance|money }}</td>
+    <td class="right">{{ u.buys }} / {{ u.sold }}</td>
+    <td class="nowrap">{{ u.created_at|dt(false) }}</td>
+    <td class="actions"><a class="btn btn-ghost btn-sm" href="{{ url_for('admin.user', uid=u.id) }}#bakiye">Bakiye ekle</a> <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.user', uid=u.id) }}">Yönet</a></td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Kullanıcı bulunamadı') }}</div>{% endif %}
+{% endblock %}

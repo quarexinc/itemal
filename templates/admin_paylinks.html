@@ -1,0 +1,45 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import empty, ic %}
+{% block title %}Ödeme Linkleri{% endblock %}
+{% block heading %}Ödeme linkleri{% endblock %}
+{% block panel %}
+<div class="notice mb">Kullanıcılar Bakiye Yükle sayfasında bu linkleri görür. Linke basan kullanıcı ödeme sayfasına gider, sitede "ödemen işleniyor" ekranı açılır. Ödemeyi kontrol edip
+  <a href="{{ url_for('admin.deposits') }}">Bakiye yüklemeleri</a> sayfasından onaylayınca fiyat kadar tutar bakiyesine eklenir.</div>
+
+<div class="card mb">
+  <h2>{{ 'Ödeme linkini düzenle' if edit else 'Yeni ödeme linki' }}</h2>
+  <form method="post" action="{{ url_for('admin.admin_paylinks') }}">
+    {{ csrf_field() }}{% if edit %}<input type="hidden" name="id" value="{{ edit.id }}">{% endif %}
+    <div class="form-row">
+      <div class="field"><label for="pl_title">Başlık</label><input type="text" id="pl_title" name="title" value="{{ form.title }}" required minlength="3" maxlength="80" placeholder="100 TL Bakiye"></div>
+      <div class="field"><label for="pl_amount">Fiyat (TL)</label><input type="text" inputmode="decimal" id="pl_amount" name="amount" value="{{ form.amount }}" required placeholder="100,00"><div class="hint">Ödeme onaylanınca kullanıcının bakiyesine eklenecek tutar.</div></div>
+    </div>
+    <div class="field"><label for="pl_url">Ödeme linki</label><input type="url" id="pl_url" name="url" value="{{ form.url }}" required maxlength="500" placeholder="https://..."><div class="hint">Yalnızca https:// ile başlayan adresler kabul edilir.</div></div>
+    <div class="field"><label for="pl_desc">Açıklama (isteğe bağlı)</label><input type="text" id="pl_desc" name="description" value="{{ form.description }}" maxlength="200"></div>
+    <div class="form-row">
+      <div class="field"><label for="pl_sort">Sıra</label><input type="number" id="pl_sort" name="sort_order" value="{{ form.sort_order }}"></div>
+      <div class="field"><label class="check"><input type="checkbox" name="is_active" value="1" {{ 'checked' if form.is_active }}> Aktif (kullanıcılar görür)</label></div>
+    </div>
+    <button class="btn" type="submit">{{ 'Kaydet' if edit else 'Ekle' }}</button>
+    {% if edit %}<a class="btn btn-ghost" href="{{ url_for('admin.admin_paylinks') }}">Vazgeç</a>{% endif %}
+  </form>
+</div>
+
+{% if rows %}
+<div class="table-wrap"><table>
+  <tr><th>Başlık</th><th>Link</th><th class="right">Fiyat</th><th>Durum</th><th class="right">Bekleyen / Onaylı</th><th></th></tr>
+  {% for p in rows %}<tr>
+    <td><b>{{ p.title }}</b>{% if p.description %}<div class="muted small">{{ p.description }}</div>{% endif %}</td>
+    <td class="small" style="max-width:280px;overflow-wrap:anywhere"><a href="{{ p.url }}" target="_blank" rel="noopener noreferrer nofollow">{{ p.url }}</a></td>
+    <td class="right nowrap"><b>{{ p.amount|money }}</b></td>
+    <td>{% if p.is_active %}<span class="badge b-ok">Aktif</span>{% else %}<span class="badge b-muted">Pasif</span>{% endif %}</td>
+    <td class="right">{{ p.pending_n }} / {{ p.approved_n }}</td>
+    <td class="actions">
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.admin_paylinks', duzenle=p.id) }}">Düzenle</a>
+      <form method="post" action="{{ url_for('admin.admin_paylink_toggle', lid=p.id) }}" style="display:inline">{{ csrf_field() }}<button class="btn btn-ghost btn-sm" type="submit">{{ 'Kapat' if p.is_active else 'Aç' }}</button></form>
+      <form method="post" action="{{ url_for('admin.admin_paylink_delete', lid=p.id) }}" style="display:inline" data-confirm="Ödeme linki silinsin mi? Geçmiş yüklemeler korunur.">{{ csrf_field() }}<button class="btn btn-danger btn-sm" type="submit">Sil</button></form>
+    </td>
+  </tr>{% endfor %}
+</table></div>
+{% else %}<div class="card">{{ empty('Henüz ödeme linki yok') }}</div>{% endif %}
+{% endblock %}

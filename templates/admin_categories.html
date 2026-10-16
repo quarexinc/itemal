@@ -1,0 +1,53 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import empty, ic with context %}
+{% block title %}Kategoriler{% endblock %}
+{% block heading %}Kategoriler{% endblock %}
+{% block panel %}
+<div class="notice mb">Komisyon alanını boş bırakırsan genel oran (%{{ global_rate }}) uygulanır. <b>Günün oyunu</b> işaretli kategoriler ana sayfadaki poster bölümünde görünür; görsel yüklemezsen sitenin hazır kategori banner'ı (yoksa genel banner) kullanılır; yüklediğin görsel varsayılanın yerine geçer, kaldırırsan varsayılana dönülür.</div>
+<div class="card mb">
+  <h3 class="mt0">Toplu afiş yükle</h3>
+  <p class="muted small">Görselleri kategori adıyla kaydet ve hepsini birden seç: <span class="mono">discord.jpg</span>, <span class="mono">steam.png</span>, <span class="mono">valorant.webp</span> gibi. Dikey (3:4) görseller en iyi sonucu verir; otomatik kırpılır. Yalnızca kullanım hakkına sahip olduğun görselleri yükle.</p>
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.category_posters') }}" class="row" style="align-items:center">
+    {{ csrf_field() }}
+    <input type="file" name="posters" accept="image/jpeg,image/png,image/webp" multiple required aria-label="Afişler" style="flex:1;min-width:220px">
+    <button class="btn" type="submit">Yükle</button>
+  </form>
+</div>
+<div class="card mb">
+  <h3 class="mt0">Yeni kategori</h3>
+  <form method="post" action="{{ url_for('admin.categories') }}" class="row" style="align-items:flex-end">
+    {{ csrf_field() }}<input type="hidden" name="action" value="add">
+    <div class="field" style="margin:0;flex:1;min-width:180px"><label for="n-name">Ad</label><input type="text" id="n-name" name="name" required minlength="2" maxlength="40"></div>
+    <div class="field" style="margin:0;width:180px"><label for="n-grp">Grup</label><input type="text" id="n-grp" name="grp" maxlength="40" list="grp-list" placeholder="PC &amp; Konsol"></div>
+    <div class="field" style="margin:0;width:70px"><label for="n-color">Renk</label><input type="color" id="n-color" name="color" value="#7c5cff"></div>
+    <div class="field" style="margin:0;width:110px"><label for="n-rate">Komisyon %</label><input type="text" inputmode="decimal" id="n-rate" name="rate" placeholder="Genel"></div>
+    <div class="field" style="margin:0;width:80px"><label for="n-order">Sıra</label><input type="number" id="n-order" name="sort_order" value="0"></div>
+    <label class="check" style="margin:0 0 10px"><input type="checkbox" name="is_daily" value="1"> Günün oyunu</label>
+    <button class="btn" type="submit">Ekle</button>
+  </form>
+  <datalist id="grp-list"><option value="PC &amp; Konsol"><option value="Mobil"><option value="Uygulama &amp; Abonelik"><option value="Hediye Kartları"></datalist>
+</div>
+{% if cats %}
+<div class="table-wrap"><table>
+  <tr><th>Ad ve açıklama</th><th>Grup</th><th>Renk</th><th>Komisyon %</th><th>Sıra</th><th>Günün oyunu</th><th>Aktif</th><th>Poster</th><th class="right">İlan</th><th></th></tr>
+  {% for c in cats %}<tr>
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.categories') }}" id="cf{{ c.id }}">{{ csrf_field() }}<input type="hidden" name="action" value="edit"><input type="hidden" name="id" value="{{ c.id }}"></form>
+    <td style="min-width:220px"><input form="cf{{ c.id }}" type="text" name="name" value="{{ c.name }}" required minlength="2" maxlength="40" aria-label="Ad"><input form="cf{{ c.id }}" type="text" name="tagline" value="{{ c.tagline }}" maxlength="90" placeholder="Kısa açıklama" aria-label="Açıklama" style="margin-top:6px"></td>
+    <td><input form="cf{{ c.id }}" type="text" name="grp" value="{{ c.grp }}" maxlength="40" list="grp-list" style="width:150px" aria-label="Grup"></td>
+    <td><input form="cf{{ c.id }}" type="color" name="color" value="{{ c.color or '#7c5cff' }}" style="width:56px" aria-label="Renk"></td>
+    <td><input form="cf{{ c.id }}" type="text" inputmode="decimal" name="rate" value="{{ c.commission_rate if c.commission_rate is not none else '' }}" placeholder="Genel" style="width:90px" aria-label="Komisyon"></td>
+    <td><input form="cf{{ c.id }}" type="number" name="sort_order" value="{{ c.sort_order }}" style="width:70px" aria-label="Sıra"></td>
+    <td><input form="cf{{ c.id }}" type="checkbox" name="is_daily" value="1" {{ 'checked' if c.is_daily }} aria-label="Günün oyunu"></td>
+    <td><input form="cf{{ c.id }}" type="checkbox" name="is_active" value="1" {{ 'checked' if c.is_active }} aria-label="Aktif"></td>
+    <td style="min-width:170px">{% if c.image %}<img class="thumb" style="width:38px;height:50px;display:inline-block;vertical-align:middle" src="{{ url_for('media_cover', name=c.image) }}" alt=""> <label class="check small" style="display:inline-flex"><input form="cf{{ c.id }}" type="checkbox" name="remove_poster" value="1"> kaldır</label>
+      {% else %}<img class="thumb" style="width:38px;height:50px;display:inline-block;vertical-align:middle" src="{{ category_banner_url(c, 'card') }}" alt=""> <span class="small muted">Varsayılan banner kullanılıyor</span>{% endif %}
+      <input form="cf{{ c.id }}" type="file" name="poster" accept="image/jpeg,image/png,image/webp" aria-label="Poster" style="margin-top:6px;padding:4px"></td>
+    <td class="right">{{ c.n }}</td>
+    <td class="actions"><div class="mini-form">
+      <button form="cf{{ c.id }}" class="btn btn-sm" type="submit">Kaydet</button>
+      <form method="post" action="{{ url_for('admin.categories') }}" data-confirm="Kategori silinsin mi?">{{ csrf_field() }}<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ c.id }}"><button class="btn btn-danger btn-sm" type="submit">Sil</button></form>
+    </div></td>
+  </tr>{% endfor %}
+</table></div>
+{% else %}<div class="card">{{ empty('Kategori yok') }}</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}Sohbet Denetimi{% endblock %}
+{% block heading %}Sohbet denetimi{% endblock %}
+{% block panel %}
+<div class="notice mb">Bir sohbeti açtığında bu erişim yönetici günlüğüne kaydedilir. Sohbetleri yalnızca şikayet, dolandırıcılık şüphesi veya destek talebi gibi gerekçelerle incele.</div>
+<form class="filters" method="get" action="{{ url_for('admin.chats') }}">
+  <div class="field grow"><label for="q">Ara</label><input type="search" id="q" name="q" value="{{ text }}" placeholder="Alıcı, satıcı veya ilan"></div>
+  <div class="field"><button class="btn" type="submit">Ara</button></div>
+</form>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>İlan</th><th>Alıcı</th><th>Satıcı</th><th class="right">Mesaj</th><th>Son mesaj</th><th>Durum</th><th></th></tr>
+  {% for c in page.rows %}<tr>
+    <td>#{{ c.id }}</td><td>{{ c.listing_title[:44] }}</td><td>{{ c.buyer_name }}</td><td>{{ c.seller_name }}{{ pkg_marks(c.seller_id) }}</td>
+    <td class="right">{{ c.n }}</td><td class="nowrap">{{ c.last_message_at|dt }}</td>
+    <td>{% if c.is_locked %}<span class="badge b-bad">Kilitli</span>{% else %}<span class="badge b-ok">Açık</span>{% endif %}</td>
+    <td class="actions"><a class="btn btn-sm" href="{{ url_for('admin.chat', cid=c.id) }}">İncele</a></td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Sohbet bulunamadı') }}</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cover, stars, rating_line, badge_list, avatar, listing_card, fav_btn, report_box, ic with context %}
+{% block title %}{{ l.title }}{% endblock %}
+{% block desc %}{{ (l.description or l.title)[:150] }}{% endblock %}
+{% block body_attr %}{% if visible %} data-view='{{ {"id": l.id, "t": l.title, "p": l.price|money, "u": url_for("listing_detail", lid=l.id), "c": cover_url(l.cover, true), "k": l.cat_color or "#7c5cff"}|tojson }}'{% endif %}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="crumbs"><a href="{{ url_for('index') }}">Ana sayfa</a><span class="sepx">/</span><a href="{{ url_for('listings', kategori=l.cat_slug) }}">{{ l.cat_name }}</a><span class="sepx">/</span><span>{{ l.title }}</span></div>
+  {% if not visible %}<div class="notice warn">Bu ilan şu an herkese açık değil ({{ l.status|slabel }}). Yalnızca sen ve yönetim görebilir.</div>{% endif %}
+  <div class="detail">
+    <div>
+      <div class="gallery" style="--c:{{ l.cat_color or '#7c5cff' }}">
+        <div class="cover wide">{% if l.cover %}<img src="{{ cover_url(l.cover) }}" alt="{{ l.title }}">{% else %}<div class="cover-ph">{{ l.cat_name|mono }}</div>{% endif %}
+          <span class="tag-l">{{ l.cat_name }}</span>
+          {% if l.old_price and l.old_price > l.price %}<span class="tag-b disc">-%{{ ((l.old_price - l.price) * 100 // l.old_price) }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="card mt">
+        <div class="row mb"><span class="badge b-muted">{{ l.cat_name }}</span>{% if l.is_featured %}<span class="badge b-warn">Öne çıkan</span>{% endif %}{{ rating_line(rating_of(l), l.rating_count) }}<span class="muted small">{{ l.sales_count }} satış</span><span class="muted small">{{ fav_count }} favori</span></div>
+        <h1>{{ l.title }}</h1>
+        <h3 class="mt">Açıklama</h3>
+        <div class="pre">{{ l.description or 'Satıcı açıklama eklememiş.' }}</div>
+        <hr>
+        <div class="notice">Teslimat anında yapılır: ödemeden sonra kodlar sipariş sayfanda görünür. Tutar, sen siparişi onaylayana kadar emanette kalır.</div>
+      </div>
+      <div class="card mt">
+        <div class="card-h"><h2>Yorumlar</h2>{{ rating_line(rating_of(l), l.rating_count) }}</div>
+        {% for r in reviews %}
+        <div class="review">
+          <div class="who">{{ stars(r.rating, true) }}<b>{{ r.buyer_name|mask }}</b><span class="muted small">{{ r.created_at|dt(false) }}</span></div>
+          <div class="pre">{{ r.comment or 'Yorum yazılmadı.' }}</div>
+          {% if r.seller_reply %}<div class="reply"><b>Satıcı yanıtı:</b> {{ r.seller_reply }}</div>{% endif %}
+        </div>
+        {% else %}<p class="muted">Bu ilan için henüz yorum yok. Yorumlar yalnızca gerçek satın alımların ardından yazılabilir.</p>{% endfor %}
+      </div>
+    </div>
+
+    <aside>
+      <div class="card buybox">
+        <div class="spread">
+          <div>{% if l.old_price and l.old_price > l.price %}<span class="price-old">{{ l.old_price|money }}</span>{% endif %}<strong class="price">{{ l.price|money }}</strong></div>
+          {% if l.stock > 5 %}<span class="stock">Stokta {{ l.stock }}</span>{% elif l.stock > 0 %}<span class="stock low">Son {{ l.stock }} adet</span>{% else %}<span class="stock out">Tükendi</span>{% endif %}
+        </div>
+        <hr>
+        {% if seller_vacation and not is_owner %}<div class="vac-note">{{ ic('clock') }}<span>Bu mağaza şu an tatilde; yeni sipariş almıyor.</span></div>{% endif %}
+        {% if is_owner %}
+          <p class="muted">Bu senin ilanın.</p>
+          <div class="row"><a class="btn btn-sm" href="{{ url_for('seller.listing_edit', lid=l.id) }}">Düzenle</a><a class="btn btn-ghost btn-sm" href="{{ url_for('seller.stock', lid=l.id) }}">Stok</a></div>
+        {% elif not visible %}
+          <button class="btn btn-block" disabled>Satışta değil</button>
+        {% elif me %}
+          {% if l.stock > 0 %}
+          <form method="post" action="{{ url_for('buy', lid=l.id) }}" data-confirm="Satın alma onaylansın mı? Tutar bakiyenden düşülür.">
+            {{ csrf_field() }}
+            <label for="qty">Adet</label>
+            <div class="stepper"><button type="button" data-step="-1" aria-label="Azalt">-</button><input type="number" id="qty" name="qty" min="1" max="{{ max_qty }}" value="1" data-price="{{ l.price }}"><button type="button" data-step="1" aria-label="Artır">+</button></div>
+            <div class="coupon-row">
+              <label for="coupon">Kupon kodu</label>
+              <div class="input-btn"><input type="text" id="coupon" name="coupon" maxlength="40" placeholder="Varsa kodu gir" autocomplete="off"><button class="btn btn-ghost" type="button" id="coupon-apply" data-url="{{ url_for('site.coupon_check', lid=l.id) }}">Uygula</button></div>
+              <div class="coupon-msg" id="coupon-msg"></div>
+            </div>
+            <div class="total-row" id="discount-row" hidden><span>İndirim</span><strong class="pos" id="discount-val">-</strong></div>
+            <div class="total-row"><span>Toplam</span><strong id="total">{{ l.price|money }}</strong></div>
+            <button class="btn btn-block btn-lg shine" type="submit" {{ 'disabled' if seller_vacation }}>{{ ic('cart') }} {{ 'Mağaza tatilde' if seller_vacation else 'Satın Al' }}</button>
+          </form>
+          <p class="small muted mt">Bakiyen: <b>{{ me.balance|money }}</b>{% if me.balance < l.price %} &middot; <a href="{{ url_for('balance', tutar=((l.price - me.balance) / 100)|round(0, 'ceil')|int) }}">Bakiye yükle</a>{% endif %}</p>
+          {% if me.balance < l.price %}<div class="topup-hint">{{ ic('wallet') }}<span>Bu ilan için <b>{{ (l.price - me.balance)|money }}</b> eksik. {% if pay_methods() %}Havale, Papara ve kripto ile yükleyebilirsin.{% else %}Bakiye yükleyip tekrar dene.{% endif %}</span></div>{% endif %}
+          {% else %}<button class="btn btn-block" disabled>Stok tükendi</button>{% endif %}
+          <form method="post" action="{{ url_for('chat_start', lid=l.id) }}" class="mt">{{ csrf_field() }}<button class="btn btn-line btn-block" type="submit">{{ ic('message') }} Satıcıya mesaj yaz</button></form>
+        {% else %}
+          <a class="btn btn-block btn-lg" href="{{ url_for('login', next=request.path) }}">Satın almak için giriş yap</a>
+          <p class="small muted mt center">Hesabın yok mu? <a href="{{ url_for('register') }}">Kayıt ol</a></p>
+        {% endif %}
+        <div class="share-row">
+          <button type="button" class="btn btn-ghost btn-sm {{ 'on' if l.id in fav_ids }}" data-fav="{{ url_for('site.favorite_toggle', lid=l.id) }}" style="flex:1">{{ ic('heart') }} Favori</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-share style="flex:1">{{ ic('share') }} Paylaş</button>
+        </div>
+        {% if me and not is_owner %}{{ report_box('listing', url_for('trust.report_listing', lid=l.id), 'İlanı bildir') }}{% endif %}
+        <ul class="perks">
+          <li>{{ ic('bolt') }}<span>Kod ödeme anında teslim edilir</span></li>
+          <li>{{ ic('shield-check') }}<span>Ödeme, sen onaylayana kadar emanette</span></li>
+          <li>{{ ic('life-buoy') }}<span>Sorun olursa destek talebi aç</span></li>
+        </ul>
+      </div>
+
+      <div class="card mt">
+        <div class="seller-box">
+          {{ avatar(seller.username, seller.avatar, 'lg') }}
+          <div>
+            <a href="{{ url_for('storefront', username=seller.username) }}"><b>{{ l.seller_display }}</b></a>{{ pkg_marks(l) }}
+            <div class="muted small">@{{ seller.username }}</div>
+            {{ rating_line(seller_stats.rating, seller_stats.reviews) }}
+          </div>
+        </div>
+        <div class="mt">{{ badge_list(seller_badges) }}</div>
+        <dl class="kv mt">
+          <dt>Toplam satış</dt><dd>{{ seller_stats.sold }} adet</dd>
+          <dt>Üyelik</dt><dd>{{ seller.created_at|dt(false) }}</dd>
+        </dl>
+        <div class="row mt"><a class="btn btn-ghost" style="flex:1" href="{{ url_for('storefront', username=seller.username) }}">Mağazayı gör</a>{% if not me or me.id != seller.id %}<form class="inline-form" method="post" action="{{ url_for('community.follow_toggle', sid=seller.id) }}">{{ csrf_field() }}<button class="btn btn-line" type="submit">{{ ic('users') }}Takip et</button></form>{% endif %}</div>
+      </div>
+    </aside>
+  </div>
+
+  {% if others %}
+  <div class="section"><div class="section-h"><h2>Bu satıcının diğer ilanları</h2></div><div class="lgrid">{% for r in others %}{{ listing_card(r) }}{% endfor %}</div></div>
+  {% endif %}
+  {% if related %}
+  <div class="section"><div class="section-h"><h2>Benzer ilanlar</h2></div><div class="lgrid">{% for r in related %}{{ listing_card(r) }}{% endfor %}</div></div>
+  {% endif %}
+  <div class="section" id="recent" data-skip="{{ l.id }}" hidden><div class="section-h"><h2>Son gezdiklerin</h2></div><div class="lgrid"></div></div>
+</div>
+{% endblock %}

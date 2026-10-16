@@ -1,0 +1,118 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import bars, badge, badge_list, rating_line, empty, ic, spark with context %}
+{% macro trend(v) %}{% if v is not none %}<span class="trend {{ 'up' if v >= 0 else 'down' }}">{{ '+' if v >= 0 }}%{{ v }}</span>{% endif %}{% endmacro %}
+{% block title %}Satıcı Paneli{% endblock %}
+{% block panel %}
+{% set series = chart|map(attribute='value')|list %}
+{% set checks = [
+  ('Telefon numarası', me.phone, url_for('profile')),
+  ('Profil fotoğrafı / logo', me.avatar, url_for('seller.store')),
+  ('Mağaza açıklaması', (me.store_desc or '')|length > 10, url_for('seller.store')),
+  ('En az 3 aktif ilan', counts.active >= 3, url_for('seller.listing_new')),
+  ('Yanıtsız yorum yok', unreplied == 0, url_for('seller.reviews', durum='yanitsiz'))] %}
+{% set done = checks|selectattr(1)|list|length %}
+
+<div class="page-h">
+  <div><div class="crumb">{{ greeting }}</div><h1>{{ me.store_name or me.username }}{{ pkg_marks(me.id) }}</h1></div>
+  <div class="row"><a class="btn" href="{{ url_for('seller.listing_new') }}">{{ ic('plus') }}Yeni ilan</a><a class="btn btn-ghost btn-sm" href="{{ url_for('seller.sales_csv') }}">{{ ic('download') }}Satışları indir</a></div>
+</div>
+{% if badges %}<div class="mb">{{ badge_list(badges) }}</div>{% endif %}
+{% set mypk = my_packages() %}
+<div class="card pk-mini mb">
+  <div class="spread">
+    <div class="row"><b>{{ ic('award') }} Paketlerim</b>
+      {% for a in mypk %}<span class="pk-chip" style="--c:{{ a.color }}"><b>{{ a.name }}</b><em>{% if a.permanent %}Kalıcı{% else %}{{ a.until|dt(false) }}{% endif %}</em></span>{% else %}<span class="muted small">Aktif paketin yok. Mavi tik ve diğer paketlerle mağazanı öne çıkar.</span>{% endfor %}
+    </div>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('seller.packages') }}">{{ 'Paketleri yönet' if mypk else 'Paketlere göz at' }}</a>
+  </div>
+</div>
+
+{% if vacation %}<div class="notice warn mb">Mağazan tatil modunda; yeni sipariş alınmıyor. <a href="{{ url_for('seller.showcase') }}">Tatili yönet</a></div>{% endif %}
+{% if goal %}
+<div class="card goal-card mb">
+  <div class="spread"><b>Aylık hedef</b><a class="small" href="{{ url_for('seller.showcase') }}">Hedefi düzenle</a></div>
+  <div class="meter"><i style="width:{{ goal.pct }}%"></i></div>
+  <div class="spread small"><span>{{ goal.got|money }} / {{ goal.goal|money }}</span><span class="{{ 'pos' if goal.done else 'muted' }}">{% if goal.done %}Hedef tamamlandı{% else %}%{{ goal.pct }} &middot; {{ goal.left|money }} kaldı &middot; {{ goal.days_left }} gün{% endif %}</span></div>
+</div>
+{% endif %}
+{% if attention %}
+<div class="card attn mb">
+  <div class="card-h"><h3>Dikkat gerektirenler</h3><span class="chip">{{ attention|length }}</span></div>
+  {% for lvl, text, link, cta in attention %}
+  <div class="attn-row {{ lvl }}"><i aria-hidden="true"></i><span>{{ text }}</span><a class="btn btn-ghost btn-sm" href="{{ link }}">{{ cta }}</a></div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="notice ok mb">Her şey yolunda: bekleyen bir işin yok.</div>
+{% endif %}
+
+<div class="kpis mb">
+  <div class="kpi"><div class="k">{{ ic('calendar') }}Bugün</div><div class="v">{{ periods.today_net|money }}</div><div class="s">{{ periods.today_qty }} adet satış {{ trend(trends.today) }}</div></div>
+  <div class="kpi"><div class="k">{{ ic('activity') }}Son 7 gün</div><div class="v">{{ periods.week_net|money }}</div><div class="s">{{ periods.week_qty }} adet satış {{ trend(trends.week) }}</div></div>
+  <div class="kpi"><div class="k">{{ ic('trend') }}Son 30 gün</div><div class="v">{{ periods.month_net|money }}</div><div class="s">{{ periods.month_qty }} adet satış {{ trend(trends.month) }}</div>{{ spark(series) }}</div>
+  <div class="kpi"><div class="k">{{ ic('wallet') }}Çekilebilir</div><div class="v ok">{{ withdrawable|money }}</div><div class="s">{% if pending_wd %}Bekleyen çekim {{ pending_wd|money }}{% else %}<a href="{{ url_for('withdraw') }}">Para çek</a>{% endif %}</div></div>
+</div>
+<div class="small muted mb" style="margin-top:-8px">Yüzdeler bir önceki dönemle karşılaştırmadır (dün, önceki 7 gün, önceki 30 gün).</div>
+
+<div class="grid g-main mb">
+  <div class="card">
+    <div class="card-h"><h3>Net kazanç</h3>
+      <div class="row"><span class="small muted">{{ series|sum|money }} toplam</span>
+        <div class="seg">{% for d in (7, 14, 30) %}<a class="{{ 'on' if days == d }}" href="{{ url_for('seller.dashboard', gun=d) }}">{{ d }} gün</a>{% endfor %}</div></div></div>
+    {{ bars(chart, true) }}
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-h"><h3>Bakiye özeti</h3><a class="small" href="{{ url_for('seller.earnings') }}">Kazançlarım</a></div>
+      <div class="sum-row"><span>Çekilebilir</span><b class="pos">{{ withdrawable|money }}</b></div>
+      <div class="sum-row"><span>Emanette bekleyen ({{ held.n }})</span><b>{{ held.s|money }}</b></div>
+      <div class="sum-row"><span>Bekleyen çekim</span><b>{{ pending_wd|money }}</b></div>
+      <div class="sum-row"><span>Toplam net kazanç</span><b>{{ totals.net|money }}</b></div>
+      <a class="btn btn-sm mt" href="{{ url_for('withdraw') }}">Para çek</a>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Mağaza sağlığı</h3><span class="small muted">{{ done }} / {{ checks|length }}</span></div>
+      <div class="meter mb"><i style="width:{{ (done * 100 / checks|length)|round|int }}%"></i></div>
+      <div class="checklist">
+        {% for label, ok, link in checks %}
+        <a class="cl-row {{ 'ok' if ok }}" href="{{ link }}">{{ ic('check-circle' if ok else 'clock') }}<span>{{ label }}</span></a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="kpis c3 mb">
+  <div class="kpi"><div class="k">{{ ic('package') }}Toplam satış</div><div class="v">{{ totals.sold }}</div><div class="s">{{ totals.orders }} sipariş</div></div>
+  <div class="kpi"><div class="k">{{ ic('chart') }}Brüt ciro</div><div class="v">{{ totals.gross|money }}</div><div class="s">Net {{ totals.net|money }}</div></div>
+  <div class="kpi"><div class="k">{{ ic('percent') }}Komisyon</div><div class="v">{{ totals.fee|money }}</div><div class="s">Genel %{{ global_rate }}{% if personal_rate is not none %} / sana özel %{{ personal_rate }}{% endif %}</div></div>
+  <div class="kpi"><div class="k">{{ ic('tag') }}Aktif ilan</div><div class="v">{{ counts.active }}</div><div class="s">{{ counts.paused }} duraklatıldı &middot; {{ stock_total }} kod stokta</div></div>
+  <div class="kpi"><div class="k">{{ ic('eye') }}Görüntülenme</div><div class="v">{{ counts.views }}</div><div class="s">{% if counts.views %}Dönüşüm %{{ (stats.sold * 100 / counts.views)|round(1)|string|replace('.', ',') if stats.sold is defined else '-' }}{% endif %}</div></div>
+  <div class="kpi"><div class="k">{{ ic('star') }}Puan</div><div class="v">{{ stats.rating if stats.reviews else '-' }}</div><div class="s">{{ stats.reviews }} yorum</div></div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <div class="card-h"><h3>Stoğu azalanlar</h3><a class="small" href="{{ url_for('seller.listings', sirala='stok') }}">İlanlarım</a></div>
+    {% if low_stock %}<div class="table-wrap"><table>
+      <tr><th>İlan</th><th class="right">Stok</th><th></th></tr>
+      {% for l in low_stock %}<tr><td>{{ l.title[:44] }}</td><td class="right"><span class="badge b-{{ 'bad' if l.stock == 0 else 'warn' }}">{{ 'Tükendi' if l.stock == 0 else l.stock }}</span></td><td class="actions"><a class="btn btn-sm" href="{{ url_for('seller.stock', lid=l.id) }}">Kod ekle</a></td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Stok durumun iyi', 'Tüm ilanlarında en az 5 kod var.') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>En çok kazandıranlar</h3></div>
+    {% if top %}<div class="top-list">
+      {% for t in top %}<div class="top-row"><div class="top-t"><span>{{ t.listing_title[:42] }}</span><b>{{ t.net|money }}</b></div>
+        <div class="meter"><i style="width:{{ (t.net * 100 / top_max)|round|int }}%"></i></div><div class="small muted">{{ t.qty }} adet</div></div>{% endfor %}
+    </div>{% else %}{{ empty('Henüz satış yok') }}{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h3>Son satışlar</h3><a class="small" href="{{ url_for('seller.sales') }}">Tüm satışlar</a></div>
+  {% if recent %}<div class="table-wrap"><table>
+    <tr><th>No</th><th>Tarih</th><th>İlan</th><th>Alıcı</th><th class="right">Adet</th><th class="right">Toplam</th><th class="right">Net</th><th>Durum</th></tr>
+    {% for o in recent %}<tr><td><a href="{{ url_for('order_detail', oid=o.id) }}">#{{ o.id }}</a></td><td class="nowrap">{{ o.created_at|dt }}</td><td>{{ o.listing_title[:36] }}</td><td>{{ o.buyer_name|mask }}</td><td class="right">{{ o.quantity }}</td><td class="right nowrap">{{ o.total|money }}</td><td class="right nowrap pos">{{ o.seller_earning|money }}</td><td>{{ badge(o.escrow_status) }}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Henüz satışın yok', 'İlanlarını görsel ve açıklamayla zenginleştirmek satışları artırır.') }}{% endif %}
+</div>
+{% endblock %}

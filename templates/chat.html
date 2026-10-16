@@ -1,0 +1,31 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import avatar, badge_list %}
+{% block title %}Mesajlar{% endblock %}
+{% block panel %}
+<div class="card chat">
+  <div class="chat-head">
+    {{ avatar(other.username, other.avatar) }}
+    <div style="flex:1;min-width:200px">
+      <div><b>{{ (other.store_name or other.username) if other.id == conv.seller_id else other.username }}</b>{% if other.id == conv.seller_id %}{{ pkg_marks(other.id) }}{% endif %} <span class="muted small">&middot; {{ 'Satıcı' if other.id == conv.seller_id else 'Alıcı' }}</span></div>
+      <a class="small" href="{{ url_for('listing_detail', lid=conv.listing_id) }}">{{ conv.listing_title }}</a>
+    </div>
+    {{ badge_list(other_badges) }}
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('inbox') }}">Tüm mesajlar</a>
+  </div>
+  <div class="chat-log" data-poll="{{ url_for('chat_poll', cid=conv.id) }}" data-last="{{ last_id }}" data-conv="{{ conv.id }}">
+    {% for m in msgs %}<div class="msg {{ 'me' if m.sender_id == me.id }}">{{ m.body }}<time>{{ m.created_at|dt }}</time></div>
+    {% else %}<p class="muted center chat-empty">Konuşmayı başlat: ilan hakkında merak ettiğini sor.</p>{% endfor %}
+    <span id="son"></span>
+  </div>
+  {% if conv.is_locked %}
+  <div class="notice bad" style="margin:0;border-radius:0">Bu konuşma yönetim tarafından kilitlendi; yeni mesaj gönderilemez.</div>
+  {% else %}
+  <form class="chat-form" method="post" action="{{ url_for('chat', cid=conv.id) }}">
+    {{ csrf_field() }}
+    <textarea name="body" placeholder="Mesajını yaz (Enter: gönder, Shift+Enter: yeni satır)" maxlength="1000" required></textarea>
+    <button class="btn" type="submit">Gönder</button>
+  </form>
+  {% endif %}
+  <div class="chat-note">Ödemeyi ve teslimatı platform dışına taşıma; şifre veya kart bilgisi paylaşma. Mesajlar güvenlik için yönetim tarafından görüntülenebilir.</div>
+</div>
+{% endblock %}

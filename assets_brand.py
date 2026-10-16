@@ -1,0 +1,63 @@
+"""Marka dosyaları: logo.svg ve favicon.svg (metin SVG). assets.FILES içine eklenir."""
+
+LOGO = r"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="itemal">
+  <defs>
+    <linearGradient id="bg" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b6bff"/>
+      <stop offset="0.55" stop-color="#7c5cff"/>
+      <stop offset="1" stop-color="#c05cf2"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.34"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gem" x1="24" y1="9" x2="40" y2="25" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#bff3ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <rect width="64" height="32" rx="16" fill="url(#shine)"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="15.25" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.5"/>
+  <g stroke-linejoin="round">
+    <path d="M32 7 43 19 32 31 21 19Z" fill="#fff" stroke="#fff" stroke-width="2.4"/>
+    <path d="M32 7 43 19 32 19Z" fill="#e9e3ff"/>
+    <path d="M32 19 43 19 32 31Z" fill="#9be8f7"/>
+    <path d="M32 19 32 31 21 19Z" fill="#c9f4fb"/>
+    <path d="M21 19 32 7 32 19Z" fill="#fff"/>
+  </g>
+  <rect x="26.5" y="35" width="11" height="20" rx="5.5" fill="#fff"/>
+</svg>
+"""
+
+FAVICON = r"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="itemal">
+  <defs>
+    <linearGradient id="bg" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b6bff"/>
+      <stop offset="0.55" stop-color="#7c5cff"/>
+      <stop offset="1" stop-color="#c05cf2"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.34"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gem" x1="24" y1="9" x2="40" y2="25" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#bff3ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <rect width="64" height="32" rx="16" fill="url(#shine)"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="15.25" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.5"/>
+  <g stroke-linejoin="round">
+    <path d="M32 7 43 19 32 31 21 19Z" fill="#fff" stroke="#fff" stroke-width="2.4"/>
+    <path d="M32 7 43 19 32 19Z" fill="#e9e3ff"/>
+    <path d="M32 19 43 19 32 31Z" fill="#9be8f7"/>
+    <path d="M32 19 32 31 21 19Z" fill="#c9f4fb"/>
+    <path d="M21 19 32 7 32 19Z" fill="#fff"/>
+  </g>
+  <rect x="26.5" y="35" width="11" height="20" rx="5.5" fill="#fff"/>
+</svg>
+"""
+
+FILES = {"logo.svg": LOGO, "favicon.svg": FAVICON}

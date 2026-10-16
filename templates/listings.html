@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_macros.html" import listing_card, pager, empty, ic with context %}
+{% set cur = (nav_categories|selectattr('slug', 'equalto', cat)|first) if cat else none %}
+{% block title %}{{ cur.name if cur else 'İlanlar' }}{% endblock %}
+{% block content %}
+<div class="container section">
+  {% if cur %}
+  {% if cur.image %}
+  <div class="cat-hero" style="--c:{{ cur.color or '#7c5cff' }}">
+    <img class="hero-img" src="{{ category_banner_url(cur, 'wide') }}" alt="">
+    <span class="cat-ic">{{ cur.name|mono }}</span>
+    <div><h1>{{ cur.name }}</h1><p>{{ cur.tagline }}</p></div>
+    <span class="badge b-muted">{{ page.total }} ilan</span>
+  </div>
+  {% else %}
+  <div class="cat-banner" style="--c:{{ cur.color or '#7c5cff' }}">
+    <picture>
+      <source media="(max-width:640px)" srcset="{{ category_banner_url(cur, 'mobile') }}">
+      <img src="{{ category_banner_url(cur, 'wide') }}" alt="{{ cur.name }}" width="1600" height="480" fetchpriority="high">
+    </picture>
+    <h1 class="sr-only">{{ cur.name }}</h1>
+    <span class="cat-banner-count">{{ page.total }} ilan</span>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="page-h"><h1>Tüm ilanlar</h1><span class="muted">{{ page.total }} sonuç</span></div>
+  {% endif %}
+
+  <div class="chips">
+    <a class="chip-c {{ 'on' if not cat }}" href="{{ url_for('listings', q=text or none, sirala=sort if sort != 'yeni' else none) }}">Hepsi</a>
+    {% for c in nav_categories[:14] %}<a class="chip-c {{ 'on' if c.slug == cat }}" style="--c:{{ c.color or '#7c5cff' }}" href="{{ url_for('listings', kategori=c.slug, q=text or none) }}">{{ c.name }}</a>{% endfor %}
+  </div>
+
+  <form class="card filters" method="get" action="{{ url_for('listings') }}">
+    <div class="field grow"><label for="q">Ara</label><input type="search" id="q" name="q" value="{{ text }}" placeholder="İlan başlığı veya açıklama" maxlength="60"></div>
+    <div class="field"><label for="kategori">Kategori</label>
+      <select id="kategori" name="kategori"><option value="">Tümü</option>{% for c in nav_categories %}<option value="{{ c.slug }}" {{ 'selected' if c.slug == cat }}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="min">En az (TL)</label><input type="text" inputmode="decimal" id="min" name="min" value="{{ pmin }}" placeholder="0"></div>
+    <div class="field"><label for="max">En çok (TL)</label><input type="text" inputmode="decimal" id="max" name="max" value="{{ pmax }}" placeholder="10.000"></div>
+    <div class="field"><label for="puan">Puan</label>
+      <select id="puan" name="puan"><option value="">Hepsi</option>{% for n in (5, 4, 3) %}<option value="{{ n }}" {{ 'selected' if min_rating == n }}>{{ n }} ve üzeri</option>{% endfor %}</select></div>
+    <div class="field"><label for="sirala">Sırala</label>
+      <select id="sirala" name="sirala">
+        {% for k, v in [('yeni', 'En yeni'), ('onerilen', 'Önerilen'), ('populer', 'En çok satan'), ('puan', 'En yüksek puan'), ('ucuz', 'Fiyat: artan'), ('pahali', 'Fiyat: azalan')] %}<option value="{{ k }}" {{ 'selected' if sort == k }}>{{ v }}</option>{% endfor %}
+      </select></div>
+    <label class="check field"><input type="checkbox" name="stok" value="1" {{ 'checked' if only_stock }}> Sadece stokta olanlar</label>
+    <div class="field"><button class="btn" type="submit">{{ ic('filter') }} Filtrele</button></div>
+  </form>
+  {% if vitrin_cat %}
+  <section class="vitrin" aria-label="Kategori vitrini">
+    <div class="vitrin-h"><h2>{{ ic('flame') }} Kategori vitrini</h2><span class="muted small">{{ cur.name if cur }} kategorisinde öne çıkanlar</span></div>
+    <div class="lgrid">{% for l in vitrin_cat %}{{ listing_card(l) }}{% endfor %}</div>
+  </section>
+  {% endif %}
+  {% if vitrin_market %}
+  <section class="vitrin" aria-label="Vitrin">
+    <div class="vitrin-h"><h2>{{ ic('flame') }} Vitrin</h2><span class="muted small">Öne çıkan ilanlar</span></div>
+    <div class="lgrid">{% for l in vitrin_market %}{{ listing_card(l) }}{% endfor %}</div>
+  </section>
+  {% endif %}
+  {% if (vitrin_cat or vitrin_market) and page.rows %}<div class="vitrin-sep"><span>Tüm ilanlar</span></div>{% endif %}
+  {% if page.rows %}<div class="lgrid">{% for l in page.rows %}{{ listing_card(l) }}{% endfor %}</div>{{ pager(page) }}
+  {% else %}<div class="card">{{ empty('Aramana uygun ilan bulunamadı', 'Filtreleri değiştirmeyi dene ya da başka bir kategoriye göz at.') }}</div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}İşlem Defteri{% endblock %}
+{% block heading %}İşlem defteri{% endblock %}
+{% block panel %}
+<form class="filters" method="get" action="{{ url_for('admin.transactions') }}">
+  <div class="field grow"><label for="q">Kullanıcı</label><input type="search" id="q" name="q" value="{{ text }}" placeholder="Kullanıcı adı"></div>
+  <div class="field"><label for="tur">Tür</label><select id="tur" name="tur"><option value="">Hepsi</option>
+    {% for k in ['deposit', 'purchase', 'sale', 'refund', 'withdraw', 'withdraw_refund', 'bonus', 'admin', 'package', 'store_fee', 'doping'] %}<option value="{{ k }}" {{ 'selected' if kind == k }}>{{ k|kindlabel }}</option>{% endfor %}</select></div>
+  <div class="field"><button class="btn" type="submit">Filtrele</button></div>
+</form>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>Kullanıcı</th><th>Tür</th><th>Açıklama</th><th class="right">Tutar</th><th class="right">Bakiye</th></tr>
+  {% for t in page.rows %}<tr>
+    <td>#{{ t.id }}</td><td class="nowrap">{{ t.created_at|dt }}</td>
+    <td><a href="{{ url_for('admin.user', uid=t.user_id) }}">{{ t.username }}</a></td>
+    <td>{{ t.kind|kindlabel }}</td><td>{{ t.description }}</td>
+    <td class="right nowrap"><b class="{{ 'pos' if t.amount > 0 }}">{{ '+' if t.amount > 0 }}{{ t.amount|money }}</b></td>
+    <td class="right nowrap muted">{{ t.balance_after|money }}</td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('İşlem bulunamadı') }}</div>{% endif %}
+{% endblock %}

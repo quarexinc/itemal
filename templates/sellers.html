@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic, avatar, badge_list, empty with context %}
+{% block title %}Mağazalar{% endblock %}
+{% block content %}
+<div class="container section">
+  <div class="page-h"><h1>Mağazalar</h1><span class="muted">{{ cards|length }} mağaza</span></div>
+  <form class="mb" method="get" action="{{ url_for('site.sellers') }}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <input type="search" name="q" value="{{ text }}" placeholder="Mağaza ara" maxlength="40" style="flex:1;min-width:200px" aria-label="Mağaza ara">
+    <select name="sirala" aria-label="Sırala" style="width:auto;min-width:180px">
+      {% for k, v in sorts.items() %}<option value="{{ k }}" {{ 'selected' if k == sort }}>{{ v[0] }}</option>{% endfor %}
+    </select>
+    <button class="btn" type="submit">Ara</button>
+  </form>
+  {% if cards %}
+  <div class="sellers">
+    {% for sc in cards %}{% set s = sc.u %}
+    <a class="seller-card{{ ' pk-featured' if s.pk_featured }}{{ ' pk-gold' if s.pk_rank == 1 }}{{ ' pk-diamond' if s.pk_rank == 2 }}" href="{{ url_for('storefront', username=s.username) }}">
+      {{ avatar(s.username, s.avatar) }}
+      <div>
+        <b>{{ s.store_name or s.username }}{{ pkg_marks(s.id) }}</b>{% if s.pk_featured %}<span class="pk-flag">{{ ic('flame') }}Öne çıkan</span>{% endif %}
+        <div class="small muted">{% if s.rc %}<span class="pos">{{ '%.1f'|format(s.avg) }}</span> puan ({{ s.rc }}) &middot; {% endif %}{{ s.sold }} satış &middot; {{ s.n_listings }} ilan</div>
+        {{ badge_list(sc.badges) }}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}{{ empty('Mağaza bulunamadı', 'Farklı bir arama dene.') }}{% endif %}
+</div>
+{% endblock %}

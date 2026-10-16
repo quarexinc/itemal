@@ -1,0 +1,27 @@
+{% extends "account_base.html" %}
+{% block title %}Talep #{{ t.id }}{% endblock %}
+{% block panel %}
+<div class="page-h">
+  <div><h1>#{{ t.id }} {{ t.subject }}</h1><span class="muted small">{{ t.category|tcat }} &middot; {{ t.created_at|dt }}{% if t.order_id %} &middot; <a href="{{ url_for('order_detail', oid=t.order_id) }}">Sipariş #{{ t.order_id }}</a>{% endif %}</span></div>
+  <span class="badge b-{{ t.status|tclass }}">{{ t.status|tlabel }}</span>
+</div>
+{% for m in msgs %}
+<div class="tmsg {{ 'staff' if m.author == 'staff' }}">
+  <div class="meta"><b>{{ 'Destek Ekibi' if m.author == 'staff' else 'Sen' }}</b><span>{{ m.created_at|dt }}</span></div>
+  <div class="pre">{{ m.body }}</div>
+</div>
+{% endfor %}
+{% if t.status == 'closed' %}
+<div class="notice">Bu talep kapatıldı. Sorun devam ediyorsa aşağıdan yazarak yeniden açabilirsin.</div>
+{% endif %}
+<div class="card">
+  <form method="post" action="{{ url_for('ticket_view', tid=t.id) }}">
+    {{ csrf_field() }}
+    <div class="field"><label for="message">{{ 'Yeniden aç ve yanıt yaz' if t.status == 'closed' else 'Yanıtın' }}</label><textarea id="message" name="message" required maxlength="3000"></textarea></div>
+    <div class="row"><button class="btn" type="submit">Gönder</button></div>
+  </form>
+  {% if t.status != 'closed' %}
+  <form method="post" action="{{ url_for('ticket_view', tid=t.id) }}" class="mt" data-confirm="Talep kapatılsın mı?">{{ csrf_field() }}<input type="hidden" name="action" value="close"><button class="link-btn" type="submit">Sorunum çözüldü, talebi kapat</button></form>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "admin_base.html" %}
+{% block title %}Sohbet #{{ conv.id }}{% endblock %}
+{% block heading %}Sohbet #{{ conv.id }}{% endblock %}
+{% block panel %}
+<div class="spread mb">
+  <div>
+    <b>{{ conv.listing_title }}</b><br>
+    <span class="muted small">Alıcı: <a href="{{ url_for('admin.user', uid=conv.buyer_id) }}">{{ conv.buyer_name }}</a> &middot; Satıcı: <a href="{{ url_for('admin.user', uid=conv.seller_id) }}">{{ conv.seller_name }}</a>{{ pkg_marks(conv.seller_id) }} &middot; Başlangıç: {{ conv.created_at|dt }}</span>
+  </div>
+  <form method="post" action="{{ url_for('admin.chat', cid=conv.id) }}" data-confirm="{{ 'Sohbetin kilidi açılsın mı?' if conv.is_locked else 'Sohbet kilitlensin mi? Taraflar yeni mesaj gönderemez.' }}">{{ csrf_field() }}
+    <button class="btn {{ 'btn-ok' if conv.is_locked else 'btn-danger' }}" type="submit">{{ 'Kilidi aç' if conv.is_locked else 'Sohbeti kilitle' }}</button></form>
+</div>
+<div class="card chat" style="height:auto;max-height:70vh">
+  <div class="chat-log" style="max-height:60vh;overflow:auto">
+    {% for m in msgs %}<div class="msg {{ 'me' if m.sender_id == conv.seller_id }}"><b class="small">{{ m.username }}</b><br>{{ m.body }}<time>{{ m.created_at|dt }}</time></div>
+    {% else %}<p class="muted center">Bu sohbette mesaj yok.</p>{% endfor %}
+  </div>
+</div>
+<p class="mt"><a href="{{ url_for('admin.chats') }}">Sohbet listesine dön</a></p>
+{% endblock %}

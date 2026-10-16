@@ -1,0 +1,31 @@
+{% extends "admin_base.html" %}
+{% block title %}{{ 'İlanı Düzenle' if item else 'İlan Oluştur' }}{% endblock %}
+{% block heading %}{{ 'İlanı düzenle #' ~ item.id if item else 'İlan oluştur' }}{% endblock %}
+{% block panel %}
+<div class="card" style="max-width:860px">
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.listing_edit', lid=item.id) if item else url_for('admin.listing_new') }}">
+    {{ csrf_field() }}
+    {% if item %}
+      <p class="muted mt0">Satıcı: <a href="{{ url_for('admin.user', uid=item.seller_id) }}">{{ item.seller_name }}</a>{{ pkg_marks(item.seller_id) }} &middot; Durum: {{ item.status|slabel }} &middot; Mevcut stok: {{ item.stock }}</p>
+    {% else %}
+      <div class="field"><label for="seller">Satıcı (kullanıcı adı)</label><input type="text" id="seller" name="seller" list="seller-list" value="{{ form.seller }}" required maxlength="30" autocomplete="off">
+        <datalist id="seller-list">{% for s in sellers %}<option value="{{ s.username }}">{% endfor %}</datalist>
+        <div class="hint">İlan bu kullanıcının adına oluşturulur; satışlardan onun hesabına kazanç yazılır.</div></div>
+      <label class="check field"><input type="checkbox" name="make_seller" value="1" {{ 'checked' if form.make_seller }}> <span>Kullanıcı satıcı değilse onu satıcı yap</span></label>
+    {% endif %}
+    <div class="field"><label for="title">Başlık</label><input type="text" id="title" name="title" value="{{ form.title }}" required minlength="5" maxlength="90"></div>
+    <div class="form-row">
+      <div class="field"><label for="category_id">Kategori</label><select id="category_id" name="category_id" required>{% for c in cats %}<option value="{{ c.id }}" {{ 'selected' if form.category_id|string == c.id|string }}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="price">Fiyat (TL)</label><input type="text" inputmode="decimal" id="price" name="price" value="{{ form.price }}" required></div>
+    </div>
+    <div class="field"><label for="old_price">Eski fiyat (TL, isteğe bağlı)</label><input type="text" inputmode="decimal" id="old_price" name="old_price" value="{{ form.old_price }}"><div class="hint">Doluysa kartta üstü çizili gösterilir; Fırsata ekle için gereklidir.</div></div>
+    <div class="field"><label for="description">Açıklama</label><textarea id="description" name="description" required minlength="20" maxlength="2000" style="min-height:140px">{{ form.description }}</textarea></div>
+    <div class="field"><label for="cover">Kapak görseli</label><input type="file" id="cover" name="cover" accept="image/jpeg,image/png,image/webp" data-preview="#cover-preview">
+      <img id="cover-preview" class="preview-img" alt="Kapak önizleme" {% if item and item.cover %}src="{{ cover_url(item.cover) }}"{% else %}hidden{% endif %}></div>
+    <div class="field"><label for="codes">{{ 'Eklenecek yeni kodlar (isteğe bağlı, her satıra bir kod)' if item else 'E-pin kodları (her satıra bir kod)' }}</label>
+      <textarea id="codes" name="codes" class="mono" style="min-height:140px" data-count-lines="#code-count" {{ 'required' if not item }}>{{ form.codes }}</textarea>
+      <div class="hint"><span id="code-count">0</span> benzersiz kod algılandı.</div></div>
+    <button class="btn" type="submit">{{ 'Kaydet' if item else 'İlanı Oluştur' }}</button> <a class="btn btn-ghost" href="{{ url_for('admin.listings') }}">Vazgeç</a>
+  </form>
+</div>
+{% endblock %}

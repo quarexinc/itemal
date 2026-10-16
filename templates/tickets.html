@@ -1,0 +1,18 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}Destek Talepleri{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Destek talepleri</h1><a class="btn" href="{{ url_for('ticket_new') }}">Yeni Talep</a></div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Konu</th><th>Kategori</th><th>Durum</th><th>Son güncelleme</th></tr>
+  {% for t in page.rows %}<tr>
+    <td><a href="{{ url_for('ticket_view', tid=t.id) }}">#{{ t.id }}</a></td>
+    <td><a href="{{ url_for('ticket_view', tid=t.id) }}">{{ t.subject }}</a></td>
+    <td>{{ t.category|tcat }}</td>
+    <td><span class="badge b-{{ t.status|tclass }}">{{ t.status|tlabel }}</span></td>
+    <td class="nowrap">{{ t.updated_at|dt }}</td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Henüz destek talebin yok', 'Bir sorun yaşarsan yeni talep oluşturabilirsin.') }}</div>{% endif %}
+{% endblock %}

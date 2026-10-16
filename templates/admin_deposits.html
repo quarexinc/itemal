@@ -1,0 +1,25 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import badge, pager, empty, status_tabs %}
+{% block title %}Bakiye Yüklemeleri{% endblock %}
+{% block heading %}Bakiye yüklemeleri{% endblock %}
+{% block panel %}
+{{ status_tabs('admin.deposits', status, counts) }}
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>Kullanıcı</th><th>Yöntem</th><th class="right">Tutar</th><th>Referans</th><th>Durum</th><th>İşlem</th></tr>
+  {% for d in page.rows %}<tr>
+    <td>#{{ d.id }}</td><td class="nowrap">{{ d.created_at|dt }}</td>
+    <td><a href="{{ url_for('admin.user', uid=d.user_id) }}">{{ d.username }}</a></td>
+    <td>{{ d.method_name }}</td><td class="right nowrap"><b>{{ d.amount|money }}</b>{% if d.bonus %}<div class="small pos">+ {{ d.bonus|money }} bonus</div>{% endif %}</td>
+    <td>{{ d.reference }}{% if d.note %}<div class="muted small">{{ d.note }}</div>{% endif %}</td>
+    <td>{{ badge(d.status) }}{% if d.auto %} <span class="badge b-muted">Otomatik</span>{% endif %}{% if d.admin_note %}<div class="muted small">{{ d.admin_note }}</div>{% endif %}</td>
+    <td class="actions">{% if d.status == 'pending' %}
+      <form method="post" action="{{ url_for('admin.deposit_action', did=d.id) }}" class="mini-form">{{ csrf_field() }}
+        <input type="text" name="note" placeholder="Not (isteğe bağlı)" maxlength="300">
+        <button class="btn btn-ok btn-sm" name="action" value="approve" type="submit" data-confirm="{{ (d.amount + d.bonus)|money }} bakiyeye eklensin mi?{{ ' (bonus dahil)' if d.bonus }}">Onayla</button>
+        <button class="btn btn-danger btn-sm" name="action" value="reject" type="submit" data-confirm="Talep reddedilsin mi?">Reddet</button>
+      </form>{% endif %}</td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Bu durumda yükleme talebi yok') }}</div>{% endif %}
+{% endblock %}

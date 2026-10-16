@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block title %}Kartla ödeme{% endblock %}
+{% block content %}
+<div class="container section">
+  <div class="cardpay" {% if pay.status == 'pending' %}data-cardpoll="{{ url_for('trust.card_status', pid=pay.id) }}" data-left="{{ left }}" data-wait="{{ wait }}"{% endif %}>
+    <div class="cardpay-head">
+      <span class="cp-lock">{{ ic('shield-check') }}</span>
+      <div><h1>Güvenli ödeme</h1><span class="muted small">Sipariş tutarı: <b class="cp-amt">{{ pay.amount|money }}</b></span></div>
+    </div>
+
+    {% if pay.status == 'awaiting' %}
+    <div class="cc-preview" aria-hidden="true">
+      <div class="cc-chip"></div>
+      <div class="cc-num" id="cc-num">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull;</div>
+      <div class="cc-row"><span id="cc-name">AD SOYAD</span><span id="cc-exp">AA/YY</span></div>
+    </div>
+    <form method="post" action="{{ url_for('trust.card_pay', pid=pay.id) }}" class="card" data-cardform autocomplete="off">
+      {{ csrf_field() }}
+      <div class="field"><label for="holder">Kart üzerindeki ad soyad</label><input type="text" id="holder" name="holder" value="{{ form.holder }}" required maxlength="60" autocomplete="cc-name"></div>
+      <div class="field"><label for="number">Kart numarası</label><input type="text" id="number" name="number" required inputmode="numeric" maxlength="23" placeholder="0000 0000 0000 0000" autocomplete="cc-number"></div>
+      <div class="form-row">
+        <div class="field"><label for="exp">Son kullanma (AA/YY)</label><input type="text" id="exp" name="exp" value="{{ form.exp }}" required inputmode="numeric" maxlength="5" placeholder="AA/YY" autocomplete="cc-exp"></div>
+        <div class="field"><label for="cvv">Güvenlik kodu (CVV)</label><input type="password" id="cvv" name="cvv" required inputmode="numeric" maxlength="4" placeholder="***" autocomplete="cc-csc"></div>
+      </div>
+      <button class="btn btn-block btn-lg shine" type="submit" data-busy="Ödeme işleniyor...">Öde {{ pay.amount|money }}</button>
+      <p class="muted small mt center">Kart bilgilerin yalnızca bu ödemenin doğrulanması için kullanılır.</p>
+    </form>
+
+    {% elif pay.status == 'pending' %}
+    <div class="card cp-state" id="cp-state">
+      <div class="cp-spin" id="cp-spin" {% if left <= 0 %}hidden{% endif %}></div>
+      <h2 id="cp-title">{{ 'Ödemen işleniyor' if left > 0 else 'Onay bekleniyor' }}</h2>
+      <p class="muted" id="cp-text">{{ 'Lütfen bu sayfayı kapatma.' if left > 0 else 'Ödemen kontrol ediliyor. Onaylandığında tutar bakiyene eklenecek; bu sayfayı açık tutabilir ya da kapatabilirsin, sonuç bildirim olarak gelir.' }}</p>
+      <div class="cp-bar" id="cp-bar" {% if left <= 0 %}hidden{% endif %}><i></i></div>
+      <dl class="kv mt">
+        <dt>Kart</dt><dd>{{ pay.brand }} &bull;&bull;&bull;&bull; {{ pay.last4 }}</dd>
+        <dt>Tutar</dt><dd>{{ pay.amount|money }}</dd>
+        <dt>Referans</dt><dd>#{{ pay.id }}</dd>
+      </dl>
+    </div>
+
+    {% elif pay.status == 'approved' %}
+    <div class="card cp-state">
+      <div class="cp-done ok">{{ ic('check') }}</div>
+      <h2>Ödeme onaylandı</h2>
+      <p class="muted">{{ pay.amount|money }} bakiyene eklendi.</p>
+      <a class="btn" href="{{ url_for('balance') }}">Bakiyeme dön</a>
+    </div>
+
+    {% else %}
+    <div class="card cp-state">
+      <div class="cp-done bad">{{ ic('x') }}</div>
+      <h2>Ödeme tamamlanamadı</h2>
+      <p class="muted">{{ pay.admin_note or 'Ödeme doğrulanamadı. Farklı bir kartla tekrar deneyebilirsin.' }}</p>
+      <a class="btn" href="{{ url_for('balance') }}">Bakiyeme dön</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

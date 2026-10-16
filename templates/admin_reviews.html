@@ -1,0 +1,30 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import pager, empty, stars %}
+{% block title %}Yorumlar{% endblock %}
+{% block heading %}Yorumlar{% endblock %}
+{% block panel %}
+<div class="tabs">
+  {% for key, label in [('', 'Tümü'), ('low', 'Düşük puanlılar'), ('hidden', 'Gizlenenler')] %}
+  <a class="{{ 'on' if flt == key }}" href="{{ url_for('admin.reviews', durum=key) if key else url_for('admin.reviews') }}">{{ label }}</a>
+  {% endfor %}
+</div>
+{% if page.rows %}
+<div class="grid" style="gap:12px">
+  {% for r in page.rows %}
+  <div class="card review">
+    <div class="spread">
+      <div class="row">{{ stars(r.rating) }}<b>{{ r.rating }}/5</b>{% if r.is_hidden %}<span class="badge b-bad">Gizli</span>{% endif %}</div>
+      <span class="muted small">{{ r.created_at|dt }}</span>
+    </div>
+    <div class="muted small mt">Alıcı <a href="{{ url_for('admin.user', uid=r.buyer_id) }}">{{ r.buyer_name }}</a> &rarr; satıcı <a href="{{ url_for('admin.user', uid=r.seller_id) }}">{{ r.seller_name }}</a>{{ pkg_marks(r.seller_id) }} &middot; {{ r.listing_title[:50] }} &middot; {% if r.order_id %}Sipariş #{{ r.order_id }}{% else %}Demo yorum{% endif %}</div>
+    {% if r.comment %}<div class="pre mt">{{ r.comment }}</div>{% else %}<p class="muted mt">Yorum yazılmamış, yalnızca puan verilmiş.</p>{% endif %}
+    {% if r.seller_reply %}<div class="reply mt"><b class="small">Satıcı yanıtı:</b><div class="pre">{{ r.seller_reply }}</div></div>{% endif %}
+    <form method="post" action="{{ url_for('admin.review_action', rid=r.id) }}" class="mt">{{ csrf_field() }}
+      {% if r.is_hidden %}<button class="btn btn-ok btn-sm" name="action" value="show" type="submit">Yeniden yayınla</button>
+      {% else %}<button class="btn btn-danger btn-sm" name="action" value="hide" type="submit" data-confirm="Yorum gizlensin mi? Puan hesaplarından da çıkar.">Gizle</button>{% endif %}
+    </form>
+  </div>
+  {% endfor %}
+</div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Yorum bulunamadı') }}</div>{% endif %}
+{% endblock %}

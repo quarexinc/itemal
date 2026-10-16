@@ -1,0 +1,82 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import stars %}
+{% block title %}Sipariş #{{ o.id }}{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Sipariş #{{ o.id }}</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('orders') if is_buyer else url_for('seller.sales') }}">Geri dön</a></div>
+
+<div class="card mb">
+  <dl class="kv">
+    <dt>İlan</dt><dd><a href="{{ url_for('listing_detail', lid=o.listing_id) }}">{{ o.listing_title }}</a></dd>
+    <dt>Tarih</dt><dd>{{ o.created_at|dt }}</dd>
+    <dt>{{ 'Satıcı' if is_buyer else 'Alıcı' }}</dt><dd>{{ o.seller_name if is_buyer else o.buyer_name }}{% if is_buyer %}{{ pkg_marks(o.seller_id) }}{% endif %}</dd>
+    <dt>Adet x birim fiyat</dt><dd>{{ o.quantity }} x {{ o.unit_price|money }}</dd>
+    <dt>Toplam</dt><dd>{{ o.total|money }}</dd>
+    {% if is_buyer and o.discount %}<dt>Kupon{% if o.coupon_code %} ({{ o.coupon_code }}){% endif %}</dt><dd class="pos">-{{ o.discount|money }}</dd><dt>Ödenen</dt><dd>{{ (o.total - o.discount)|money }}</dd>{% endif %}
+    {% if not is_buyer %}<dt>Komisyon (%{{ o.commission_rate }})</dt><dd>{{ o.commission|money }}</dd><dt>Net kazancın</dt><dd>{{ o.seller_earning|money }}</dd>{% endif %}
+  </dl>
+</div>
+
+<div class="card mb escrow-{{ o.escrow_status }}">
+  <div class="card-h"><h2>Ödeme durumu</h2><span class="badge b-{{ o.escrow_status|sclass }}">{{ o.escrow_status|slabel }}</span></div>
+  {% if o.escrow_status == 'held' %}
+    {% if is_buyer %}
+    <p class="muted">Ödemen emanette; satıcıya henüz aktarılmadı. Kodları kontrol edip çalıştığından emin olunca siparişi onayla. Onay vermezsen tutar <b>{{ o.release_at|dt }}</b> tarihinde otomatik aktarılır.</p>
+    <div class="row">
+      <form method="post" action="{{ url_for('trust.order_confirm', oid=o.id) }}" data-confirm="Kodlar sorunsuz çalıştı, ödeme satıcıya aktarılsın mı?">{{ csrf_field() }}<button class="btn" type="submit">Siparişi onayla</button></form>
+      <details class="report-box inline"><summary>Sorun var</summary>
+        <form method="post" action="{{ url_for('trust.order_dispute', oid=o.id) }}">{{ csrf_field() }}
+          <div class="field"><label>Sorun nedir?</label><select name="reason" required><option value="">Seç</option>{% for r in REASONS['order'] %}<option>{{ r }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Ayrıntı</label><textarea name="detail" maxlength="600"></textarea></div>
+          <button class="btn btn-danger btn-sm" type="submit">İtiraz et</button>
+        </form>
+      </details>
+    </div>
+    {% else %}
+    <p class="muted">{{ o.seller_earning|money }} alıcı onayı bekliyor. Alıcı onaylayınca ya da <b>{{ o.release_at|dt }}</b> tarihinde bakiyene geçecek.</p>
+    {% endif %}
+  {% elif o.escrow_status == 'disputed' %}
+    <p class="muted">Bu sipariş için itiraz açıldı. Yönetim ekibi inceliyor; tutar sonuçlanana kadar bloke kalır.</p>
+  {% elif o.escrow_status == 'refunded' %}
+    <p class="muted">Sipariş iade edildi.</p>
+  {% else %}
+    <p class="muted">{{ 'Siparişi onayladın; ödeme satıcıya aktarıldı.' if is_buyer and o.confirmed_at else 'Ödeme tamamlandı.' }}</p>
+  {% endif %}
+</div>
+
+{% if is_buyer %}
+<div class="card mb">
+  <div class="card-h"><h2>Kodların</h2>{% if codes|length > 1 %}<button type="button" class="btn btn-ghost btn-sm" data-copy=".code-val">Hepsini kopyala</button>{% endif %}</div>
+  {% for c in codes %}
+  <div class="codebox"><code class="code-val" id="code{{ loop.index }}">{{ c.code }}</code><button type="button" class="btn btn-ghost btn-sm" data-copy="#code{{ loop.index }}">Kopyala</button></div>
+  {% endfor %}
+  <p class="muted small mt">Kodları başkalarıyla paylaşma. Bu sayfaya istediğin zaman Siparişlerim bölümünden ulaşabilirsin.</p>
+</div>
+
+<div class="card mb">
+  <div class="card-h"><h2>Değerlendirme</h2></div>
+  {% if review %}
+    <div class="review">
+      <div class="who">{{ stars(review.rating) }}<span class="muted small">{{ review.created_at|dt }}</span>{% if review.is_hidden %}<span class="badge b-bad">Yönetim tarafından gizlendi</span>{% endif %}</div>
+      <div class="pre">{{ review.comment or 'Yorum yazmadın.' }}</div>
+      {% if review.seller_reply %}<div class="reply"><b>Satıcı yanıtı:</b> {{ review.seller_reply }}</div>{% endif %}
+    </div>
+  {% else %}
+    <p class="muted">Siparişinden memnun kaldın mı? Puanın diğer alıcılara yardımcı olur.</p>
+    <form method="post" action="{{ url_for('review_create', oid=o.id) }}">
+      {{ csrf_field() }}
+      <div class="field"><label for="rating">Puan</label>
+        <select id="rating" name="rating" required><option value="">Seç</option><option value="5">5 - Mükemmel</option><option value="4">4 - İyi</option><option value="3">3 - Orta</option><option value="2">2 - Kötü</option><option value="1">1 - Çok kötü</option></select></div>
+      <div class="field"><label for="comment">Yorumun (isteğe bağlı)</label><textarea id="comment" name="comment" maxlength="500" placeholder="Teslimat hızı, satıcı iletişimi ..."></textarea></div>
+      <button class="btn" type="submit">Değerlendirmeyi Gönder</button>
+    </form>
+  {% endif %}
+</div>
+
+<div class="row">
+  <form method="post" action="{{ url_for('chat_start', lid=o.listing_id) }}">{{ csrf_field() }}<button class="btn btn-line" type="submit">Satıcıya mesaj yaz</button></form>
+  <a class="btn btn-line" href="{{ url_for('ticket_new', siparis=o.id) }}">Bu sipariş için destek talebi aç</a>
+</div>
+{% else %}
+<div class="notice">Kodlar alıcıya teslim edildi; güvenlik nedeniyle burada gösterilmez.</div>
+{% endif %}
+{% endblock %}

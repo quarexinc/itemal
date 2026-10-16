@@ -1,0 +1,23 @@
+{% extends "admin_base.html" %}
+{% block title %}Üye Oluştur{% endblock %}
+{% block heading %}Üye oluştur{% endblock %}
+{% block panel %}
+<div class="card" style="max-width:760px">
+  <p class="muted mt0">Yönetici olarak yeni bir hesap açarsın. Şifreyi boş bırakırsan güçlü bir geçici şifre üretilir ve yalnızca bir kez gösterilir.</p>
+  <form method="post" action="{{ url_for('admin.user_new') }}">
+    {{ csrf_field() }}
+    <div class="form-row">
+      <div class="field"><label for="username">Kullanıcı adı</label><input type="text" id="username" name="username" value="{{ form.username }}" required minlength="3" maxlength="20"></div>
+      <div class="field"><label for="email">E-posta</label><input type="email" id="email" name="email" value="{{ form.email }}" required></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="password">Şifre (boşsa otomatik)</label><input type="text" id="password" name="password" autocomplete="off" minlength="8" maxlength="128"></div>
+      <div class="field"><label for="balance">Açılış bakiyesi (TL, isteğe bağlı)</label><input type="text" inputmode="decimal" id="balance" name="balance" value="{{ form.balance }}" placeholder="0"></div>
+    </div>
+    <label class="check field"><input type="checkbox" name="kyc_ok" value="1" {{ 'checked' if form.kyc_ok }}> <span>Kimlik doğrulaması onaylı say <span class="muted">(yalnızca belgeyi kendin doğruladıysan)</span></span></label>
+    <label class="check field"><input type="checkbox" name="is_seller" value="1" {{ 'checked' if form.is_seller }}> <span>Satıcı olarak oluştur</span></label>
+    <div class="field"><label for="store_name">Mağaza adı (satıcıysa)</label><input type="text" id="store_name" name="store_name" value="{{ form.store_name }}" maxlength="40"></div>
+    <button class="btn" type="submit">Üyeyi Oluştur</button> <a class="btn btn-ghost" href="{{ url_for('admin.users') }}">Vazgeç</a>
+  </form>
+</div>
+{% endblock %}

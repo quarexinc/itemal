@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block title %}Kategoriler{% endblock %}
+{% block content %}
+<div class="container section">
+  <div class="page-h"><h1>Kategoriler</h1><span class="muted">{{ cats|length }} kategori</span></div>
+  {% for g in groups %}
+  <div class="section-t mt" style="margin-top:26px">{{ g }}</div>
+  <div class="cat-ban-grid">
+    {% for c in cats if c.grp == g %}
+    <a class="cat-ban" style="--c:{{ c.color or '#7c5cff' }}" href="{{ url_for('listings', kategori=c.slug) }}">
+      <span class="cat-ban-art"><img src="{{ category_banner_url(c, 'mobile') }}" alt="{{ c.name }}" loading="lazy" width="640" height="400">{% if c.image %}<span class="cat-ban-name">{{ c.name }}</span>{% endif %}</span>
+      <span class="cat-ban-foot"><span>İlanlara git</span><em>{{ c.n }} ilan</em></span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  {% set other = cats|rejectattr('grp', 'in', groups)|list %}
+  {% if other %}
+  <div class="section-t mt">Diğer</div>
+  <div class="cat-ban-grid">
+    {% for c in other %}
+    <a class="cat-ban" style="--c:{{ c.color or '#7c5cff' }}" href="{{ url_for('listings', kategori=c.slug) }}">
+      <span class="cat-ban-art"><img src="{{ category_banner_url(c, 'mobile') }}" alt="{{ c.name }}" loading="lazy" width="640" height="400">{% if c.image %}<span class="cat-ban-name">{{ c.name }}</span>{% endif %}</span>
+      <span class="cat-ban-foot"><span>İlanlara git</span><em>{{ c.n }} ilan</em></span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

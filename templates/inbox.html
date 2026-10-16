@@ -1,0 +1,21 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import avatar, empty %}
+{% block title %}Mesajlar{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Mesajlar</h1></div>
+{% if convs %}
+<div class="card" style="padding:0">
+  {% for it in convs %}
+  <a class="conv" href="{{ url_for('chat', cid=it.c.id) }}">
+    {{ avatar(it.other, it.other_avatar) }}
+    <div class="grow">
+      <div><b>{{ it.other }}</b>{% if it.c.buyer_id == me.id %}{{ pkg_marks(it.c.seller_id) }}{% endif %} <span class="muted small">&middot; {{ 'Satıcı' if it.c.buyer_id == me.id else 'Alıcı' }}</span></div>
+      <div class="muted small ellipsis">{{ it.c.listing_title }}</div>
+      <div class="ellipsis small">{% if it.last %}{{ 'Sen: ' if it.last.sender_id == me.id }}{{ it.last.body }}{% else %}<span class="muted">Henüz mesaj yok</span>{% endif %}</div>
+    </div>
+    <div class="right small muted nowrap">{{ it.c.last_message_at|dt }}{% if it.unread %}<div class="mt"><span class="dot-count">{{ it.unread }}</span></div>{% endif %}</div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}<div class="card">{{ empty('Henüz mesajın yok', 'Bir ilan sayfasındaki "Satıcıya mesaj yaz" düğmesiyle konuşma başlatabilirsin.') }}</div>{% endif %}
+{% endblock %}

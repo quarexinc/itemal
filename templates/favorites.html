@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% from "_macros.html" import listing_card, pager, empty, ic with context %}
+{% block title %}Favorilerim{% endblock %}
+{% block content %}
+<div class="container section">
+  <div class="page-h"><h1>{{ ic('heart') }} Favorilerim</h1><span class="muted">{{ page.total }} ilan</span></div>
+  {% if page.rows %}<div class="lgrid">{% for l in page.rows %}{{ listing_card(l) }}{% endfor %}</div>{{ pager(page) }}
+  {% else %}<div class="card">{{ empty('Henüz favorin yok', 'İlan kartlarındaki kalp simgesine dokunarak ilanları buraya ekleyebilirsin.') }}<div class="center"><a class="btn" href="{{ url_for('listings') }}">İlanlara göz at</a></div></div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Satıcı Ol{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Satıcı başvurusu</h1></div>
+{% if pending %}
+<div class="notice">Satıcı başvurun inceleniyor. Sonuç hesabına yansıyacak.</div>
+<div class="card"><dl class="kv"><dt>Mağaza adı</dt><dd>{{ last.store_name }}</dd><dt>Başvuru tarihi</dt><dd>{{ last.created_at|dt }}</dd></dl></div>
+{% else %}
+{% if last and last.status == 'rejected' %}<div class="notice bad"><b>Önceki başvurun reddedildi:</b> {{ last.admin_note or 'Uygun bulunmadı.' }} Bilgilerini düzeltip tekrar başvurabilirsin.</div>{% endif %}
+<div class="card mb">
+  <h3 class="mt0">Satıcılar için</h3>
+  <ul class="muted">
+    <li>Onaylanınca ilan verebilir, stok yükleyebilir, satış ve kazanç raporlarını görebilirsin.</li>
+    <li>Satış başına komisyon alınır (genel oran %{{ cfg.commission_percent }}); ilan verirken net kazancını görürsün.</li>
+    <li>Yorumlar ve satış adedin doğrultusunda "Güvenilir Satıcı" gibi rozetler kazanırsın.</li>
+    <li>Yalnızca gerçek, kullanılmamış kodlar satılabilir; ihlal hesabın kapatılmasına yol açar.</li>
+  </ul>
+</div>
+<div class="card">
+  <form method="post" action="{{ url_for('seller_apply') }}">
+    {{ csrf_field() }}
+    <div class="field"><label for="store_name">Mağaza adı</label><input type="text" id="store_name" name="store_name" value="{{ form.store_name }}" required minlength="3" maxlength="40"></div>
+    <div class="field"><label for="description">Mağazanı tanıt</label><textarea id="description" name="description" required minlength="20" maxlength="500">{{ form.description }}</textarea><div class="hint">Ne sattığını ve kodları nereden temin ettiğini kısaca anlat (en az 20 karakter).</div></div>
+    <div class="field"><label for="experience">Deneyimin (isteğe bağlı)</label><textarea id="experience" name="experience" maxlength="500" style="min-height:80px">{{ form.experience }}</textarea></div>
+    <label class="check field"><input type="checkbox" name="agree" value="1" required> <span>Satıcı kurallarını okudum; yalnızca gerçek ve kullanılmamış kodlar satacağımı kabul ediyorum.</span></label>
+    <button class="btn" type="submit">Başvuruyu Gönder</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import pager, empty, ic with context %}
+{% block title %}Mağazalar{% endblock %}
+{% block heading %}Mağazalar{% endblock %}
+{% block panel %}
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Mağaza</div><div class="v">{{ kpi.n }}</div></div>
+  <div class="stat"><div class="k">Özel adresli</div><div class="v">{{ kpi.custom }}</div></div>
+  <div class="stat"><div class="k">Tatilde</div><div class="v">{{ kpi.vac }}</div></div>
+  <div class="stat"><div class="k">Toplam mağaza ziyareti</div><div class="v">{{ kpi.views }}</div></div>
+</div>
+<form class="filters" method="get" action="{{ url_for('admin.stores') }}">
+  <div class="field grow"><label for="q">Ara</label><input type="search" id="q" name="q" value="{{ text }}" placeholder="Kullanıcı adı, mağaza adı veya adres"></div>
+  <div class="field"><label for="durum">Filtre</label><select id="durum" name="durum"><option value="">Hepsi</option>{% for k, v in [('adresli', 'Özel adresli'), ('tatil', 'Tatildeki'), ('gercek', 'Gerçek mağazalar'), ('demo', 'Örnek mağazalar')] %}<option value="{{ k }}" {{ 'selected' if flt == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="sirala">Sırala</label><select id="sirala" name="sirala">{% for k, v in sorts.items() %}<option value="{{ k }}" {{ 'selected' if sort == k }}>{{ v[0] }}</option>{% endfor %}</select></div>
+  <div class="field"><button class="btn" type="submit">Uygula</button></div>
+</form>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>Mağaza</th><th>Adres</th><th class="right">İlan</th><th class="right">Satış</th><th class="right">30 gün ciro</th><th class="right">Ziyaret</th><th>Durum</th><th></th></tr>
+  {% for s in page.rows %}<tr>
+    <td><a href="{{ url_for('admin.user', uid=s.id) }}"><b>{{ s.store_name or s.username }}</b></a>{{ pkg_marks(s.id) }}<div class="muted small">@{{ s.username }}{% if s.is_demo %} &middot; örnek{% endif %}</div></td>
+    <td class="nowrap"><a href="{{ url_for('storefront', username=s.username) }}" target="_blank" rel="noopener">/{{ s.store_slug or s.username }}</a>{% if not s.store_slug %}<div class="muted small">varsayılan</div>{% endif %}</td>
+    <td class="right">{{ s.listings }}</td><td class="right">{{ s.sold }}</td><td class="right nowrap">{{ s.gmv30|money }}</td><td class="right">{{ s.store_views }}</td>
+    <td>{% if s.is_banned %}<span class="badge b-bad">Yasaklı</span>{% elif s.store_vacation %}<span class="badge b-warn">Tatilde</span>{% else %}<span class="badge b-ok">Açık</span>{% endif %}</td>
+    <td class="actions"><div class="mini-form">
+      <form method="post" action="{{ url_for('admin.store_action', uid=s.id) }}" class="row" style="flex-wrap:nowrap">{{ csrf_field() }}<input type="hidden" name="action" value="slug"><input type="text" name="slug" value="{{ s.store_slug }}" placeholder="adres" maxlength="30" style="width:130px;padding:6px 8px" aria-label="Mağaza adresi"><button class="btn btn-line btn-sm" type="submit">Adresi ata</button></form>
+      {% if s.store_vacation %}<form method="post" action="{{ url_for('admin.store_action', uid=s.id) }}">{{ csrf_field() }}<input type="hidden" name="action" value="vacation_off"><button class="btn btn-ghost btn-sm" type="submit">Tatili bitir</button></form>{% endif %}
+      <form method="post" action="{{ url_for('admin.store_action', uid=s.id) }}" data-confirm="Mağaza duyurusu ve sosyal bağlantılar temizlensin mi?">{{ csrf_field() }}<input type="hidden" name="action" value="reset_notice"><button class="btn btn-ghost btn-sm" type="submit">İçeriği temizle</button></form>
+    </div></td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Mağaza bulunamadı') }}</div>{% endif %}
+{% endblock %}

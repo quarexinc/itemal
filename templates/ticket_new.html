@@ -1,0 +1,21 @@
+{% extends "account_base.html" %}
+{% block title %}Yeni Destek Talebi{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Yeni destek talebi</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('tickets') }}">Taleplerim</a></div>
+<div class="card">
+  <form method="post" action="{{ url_for('ticket_new') }}">
+    {{ csrf_field() }}
+    <div class="form-row">
+      <div class="field"><label for="category">Kategori</label>
+        <select id="category" name="category" required>{% for k, v in TICKET_CATEGORIES.items() %}<option value="{{ k }}" {{ 'selected' if form.category == k }}>{{ v }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="order_id">İlgili sipariş (isteğe bağlı)</label>
+        <select id="order_id" name="order_id"><option value="">Yok</option>{% for o in my_orders %}<option value="{{ o.id }}" {{ 'selected' if (form.order_id|string == o.id|string) or (not form and preset_order == o.id) }}>#{{ o.id }} - {{ o.listing_title[:40] }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label for="subject">Konu</label><input type="text" id="subject" name="subject" value="{{ form.subject }}" required minlength="5" maxlength="100"></div>
+    <div class="field"><label for="message">Sorunun</label><textarea id="message" name="message" required minlength="10" maxlength="3000" style="min-height:160px" placeholder="Ne oldu? Ne zaman oldu? Sipariş veya işlem numarasını yazmayı unutma.">{{ form.message }}</textarea></div>
+    {% if need_captcha %}<div class="notice small">Kısa sürede çok sayıda talep oluşturdun; devam etmek için güvenlik doğrulamasını tamamla.</div>{{ captcha_block('ticket') }}{% endif %}
+    <div class="notice small">Şifreni, kart bilgilerini veya kodları bu forma yazma. Destek ekibi bu bilgileri asla istemez.</div>
+    <button class="btn" type="submit">Talebi Gönder</button>
+  </form>
+</div>
+{% endblock %}

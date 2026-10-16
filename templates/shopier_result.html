@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block title %}Ödeme sonucu{% endblock %}
+{% block content %}
+<div class="container section" style="max-width:520px">
+  <div class="card cp-state">
+    {% if state == 'success' %}
+      <div class="cp-done ok">{{ ic('check') }}</div><h2>Ödeme alındı</h2>
+      <p class="muted">{{ pay.amount|money }} bakiyene eklendi.{% if pay.fee %} Ödenen toplam {{ pay.charged|money }} (komisyon {{ pay.fee|money }}).{% endif %}</p>
+    {% elif state == 'review' %}
+      <div class="cp-done ok">{{ ic('check') }}</div><h2>Ödeme alındı, onay bekleniyor</h2>
+      <p class="muted">{{ pay.amount|money }} tutarı ödemen kontrol edildikten sonra bakiyene eklenecek.{% if pay.fee %} Ödenen toplam {{ pay.charged|money }} (komisyon {{ pay.fee|money }}).{% endif %}</p>
+    {% elif state == 'failed' or state == 'rejected' %}
+      <div class="cp-done bad">{{ ic('x') }}</div><h2>Ödeme tamamlanamadı</h2>
+      <p class="muted">Ödeme onaylanmadı. İstersen tekrar deneyebilir ya da başka bir yöntem seçebilirsin.</p>
+    {% elif state == 'created' %}
+      <h2>Ödeme bekleniyor</h2><p class="muted">Shopier'den henüz sonuç gelmedi. Ödemeyi tamamladıysan birkaç dakika içinde bakiyene yansır.</p>
+    {% elif state == 'invalid' %}
+      <div class="cp-done bad">{{ ic('x') }}</div><h2>Geri dönüş doğrulanamadı</h2>
+      <p class="muted">Ödeme bilgisi doğrulanamadı. Ödemeni yaptıysan destek talebi açıp sipariş numaranı ilet.</p>
+    {% else %}
+      <h2>Ödeme sonucu alındı</h2><p class="muted">Sonucu görmek için hesabına giriş yap.</p>
+      <a class="btn" href="{{ url_for('login', next=url_for('balance')) }}">Giriş yap</a>
+    {% endif %}
+    {% if state != 'anon' %}<a class="btn mt" href="{{ url_for('balance') }}">Bakiyeme dön</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

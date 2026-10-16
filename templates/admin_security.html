@@ -1,0 +1,67 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block heading %}Güvenlik{% endblock %}
+{% block panel %}
+{% if mode == 'off' %}<div class="notice warn">Acil durum bayrağı açık (ADMIN_2FA=off): yönetici girişi iki adımlı doğrulama olmadan, yalnızca şifreyle yapılıyor. Sorun giderildikten sonra .env içinden ADMIN_2FA satırını kaldır.</div>{% endif %}
+{% if new_codes %}
+<div class="card mb">
+  <div class="card-h"><h3>Yeni yedek kodların</h3></div>
+  <p class="muted" style="margin-top:0">Eski kodların hepsi geçersiz oldu. Her kod yalnızca bir kez çalışır ve <b>bir daha gösterilmeyecek</b>.</p>
+  <div class="code-grid" id="backup-codes">{% for c in new_codes %}<code>{{ c }}</code>{% endfor %}</div>
+  <div class="row" style="margin-top:14px"><button class="btn btn-line btn-sm" type="button" data-copy="#backup-codes code">{{ ic('copy') }}Kodları kopyala</button></div>
+</div>
+{% endif %}
+
+<div class="two-col mb">
+  <div class="card">
+    <div class="card-h"><h3>İki adımlı doğrulama</h3>{% if enabled %}<span class="badge b-ok">Etkin</span>{% elif mode == 'off' %}<span class="badge b-muted">Devre dışı (ADMIN_2FA=off)</span>{% else %}<span class="badge b-warn">Kurulu değil</span>{% endif %}</div>
+    {% if enabled %}
+      <p class="muted" style="margin-top:0">Etkinleştirilme: {{ since|dt }}. Kalan yedek kod: <b>{{ left }}</b>{% if left <= 3 %} &middot; azalıyor, yenilerini üret{% endif %}</p>
+      <details class="mb"><summary>Yedek kodları yeniden üret</summary>
+        <form method="post" action="{{ url_for('admin.backup_regenerate') }}" autocomplete="off" style="margin-top:10px">{{ csrf_field() }}
+          <div class="field"><label for="p1">Yönetici şifren</label><input type="password" id="p1" name="password" required autocomplete="current-password"></div>
+          <div class="field"><label for="c1">Güncel doğrulama kodu</label><input class="tf-input" type="text" id="c1" name="code" required inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="000000"></div>
+          <button class="btn btn-line" type="submit">Yeni 10 kod üret</button>
+        </form>
+      </details>
+      {% if mode == 'required' %}
+        <p class="small muted">Yönetici girişi için iki adımlı doğrulama zorunlu (ADMIN_2FA=required); kapatılamaz.</p>
+      {% else %}
+      <details><summary>İki adımlı doğrulamayı kapat</summary>
+        <form method="post" action="{{ url_for('admin.tfa_disable') }}" autocomplete="off" data-confirm="İki adımlı doğrulama kapatılsın mı? Hesabın yalnızca şifreyle korunur." style="margin-top:10px">{{ csrf_field() }}
+          <div class="field"><label for="p2">Yönetici şifren</label><input type="password" id="p2" name="password" required autocomplete="current-password"></div>
+          <div class="field"><label for="c2">Güncel doğrulama kodu</label><input class="tf-input" type="text" id="c2" name="code" required inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="000000"></div>
+          <button class="btn btn-danger" type="submit">Kapat</button>
+        </form>
+      </details>
+      {% endif %}
+    {% else %}
+      <p class="muted" style="margin-top:0">{% if mode == 'off' %}Acil durum bayrağı açık: ADMIN_2FA=off olduğu için giriş yalnızca şifreyle yapılıyor. Normale dönmek için .env içinde ADMIN_2FA değerini kaldır.{% else %}Giriş şifreye ek olarak telefondaki bir kodla korunur.{% endif %}</p>
+      {% if mode != 'off' %}<a class="btn" href="{{ url_for('admin.setup') }}">{{ ic('shield-check') }}Etkinleştir</a>{% endif %}
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h3>Oturum ve erişim</h3></div>
+    <div class="table-wrap"><table>
+      <tr><td>Bosta kalma zaman aşımı</td><td class="right">{{ info.idle_min }} dk (kalan ~{{ info.idle_left }} dk)</td></tr>
+      <tr><td>Mutlak oturum süresi</td><td class="right">{{ info.abs_hours }} saat (kalan ~{{ info.abs_left // 60 }} sa {{ info.abs_left % 60 }} dk)</td></tr>
+      <tr><td>Oturum tarayıcıya bağlı</td><td class="right"><span class="badge b-ok">Evet</span></td></tr>
+      <tr><td>Oturum ağa (/24) bağlı</td><td class="right">{% if info.bind_ip %}<span class="badge b-ok">Evet</span>{% else %}<span class="badge b-muted">Hayır (ADMIN_BIND_IP=1)</span>{% endif %}</td></tr>
+      <tr><td>IP izin listesi</td><td class="right">{% if info.allow_count %}<span class="badge b-ok">{{ info.allow_count }} kayıt</span>{% else %}<span class="badge b-muted">Kapalı (ADMIN_ALLOWED_IPS)</span>{% endif %}</td></tr>
+      <tr><td>Yönetim yolu</td><td class="right">{% if info.custom_prefix %}<span class="badge b-ok">Özel</span>{% else %}<span class="badge b-muted">Varsayılan (ADMIN_URL_PREFIX)</span>{% endif %}</td></tr>
+      <tr><td>İki adımlı doğrulama modu</td><td class="right"><code>{{ info.mode }}</code></td></tr>
+      <tr><td>Hatalı giriş kilidi</td><td class="right">5 hata: 15 dk, sonra 1 saat, sonra 24 saat</td></tr>
+      <tr><td>Şu anki IP</td><td class="right">{{ info.your_ip }}</td></tr>
+    </table></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h3>Son yönetici girişleri</h3><span class="small muted">En son 30 olay &middot; IP adresleri maskelenir</span></div>
+  {% if events %}<div class="table-wrap"><table>
+    <tr><th>Zaman</th><th>IP</th><th>Tarayıcı</th><th>Sonuç</th></tr>
+    {% for e in events %}<tr><td class="nowrap">{{ e.at|dt }}</td><td class="nowrap">{{ e.ip }}</td><td>{{ e.browser }}</td><td><span class="badge b-{{ e.cls }}">{{ e.label }}</span>{% if e.detail %}<div class="muted small">{{ e.detail }}</div>{% endif %}</td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">Henüz kayıt yok.</p>{% endif %}
+</div>
+{% endblock %}

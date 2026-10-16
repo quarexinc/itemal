@@ -1,0 +1,36 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import badge, pager, empty, rating_line %}
+{% block title %}İlanlar{% endblock %}
+{% block heading %}İlanlar{% endblock %}
+{% block panel %}
+<div class="spread mb">
+  <form class="filters" style="margin:0;flex:1" method="get" action="{{ url_for('admin.listings') }}">
+    <div class="field grow"><label for="q">Ara</label><input type="search" id="q" name="q" value="{{ text }}" placeholder="Başlık veya satıcı"></div>
+    <div class="field"><label for="durum">Durum</label><select id="durum" name="durum"><option value="">Hepsi</option>
+      {% for k, v in [('active', 'Yayında'), ('paused', 'Duraklatıldı'), ('blocked', 'Engelli'), ('removed', 'Silinmiş'), ('featured', 'Öne çıkanlar')] %}<option value="{{ k }}" {{ 'selected' if status == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="field"><button class="btn" type="submit">Filtrele</button></div>
+  </form>
+  <a class="btn" href="{{ url_for('admin.listing_new') }}">İlan Oluştur</a>
+</div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>İlan</th><th>Satıcı</th><th class="right">Fiyat</th><th class="right">Stok</th><th class="right">Satış</th><th>Puan</th><th>Durum</th><th></th></tr>
+  {% for l in page.rows %}<tr>
+    <td>#{{ l.id }}</td>
+    <td><div class="row" style="flex-wrap:nowrap"><div class="thumb">{% if l.cover %}<img src="{{ cover_url(l.cover, true) }}" alt="">{% endif %}</div><div><a href="{{ url_for('listing_detail', lid=l.id) }}"><b>{{ l.title[:44] }}</b></a> {% if l.is_featured %}<span class="badge b-warn">Öne çıkan</span>{% endif %}{% if l.is_deal %} <span class="badge b-info">Fırsat</span>{% endif %}{% if l.is_demo %} <span class="badge b-muted">Demo</span>{% endif %}<div class="muted small">{{ l.cat_name }}</div></div></div></td>
+    <td><a href="{{ url_for('admin.user', uid=l.seller_id) }}">{{ l.seller_name }}</a>{{ pkg_marks(l.seller_id) }}</td>
+    <td class="right nowrap">{% if l.old_price %}<span class="price-old">{{ l.old_price|money }}</span>{% endif %}{{ l.price|money }}</td><td class="right">{{ l.stock }}</td><td class="right">{{ l.sales_count }}</td>
+    <td>{{ rating_line(rating_of(l), l.rating_count) }}</td>
+    <td>{{ badge(l.status) }}</td>
+    <td class="actions"><div class="mini-form">
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.listing_edit', lid=l.id) }}">Düzenle</a>
+      <form method="post" action="{{ url_for('admin.listing_feature', lid=l.id) }}">{{ csrf_field() }}<button class="btn btn-line btn-sm" type="submit">{{ 'Öne çıkarmayı kaldır' if l.is_featured else 'Öne çıkar' }}</button></form>
+      <form method="post" action="{{ url_for('admin.listing_deal', lid=l.id) }}">{{ csrf_field() }}<button class="btn btn-line btn-sm" type="submit" title="{{ 'Fırsat listesinden çıkar' if l.is_deal else 'Fırsat ürünlerine ekle (eski fiyat gerekir)' }}">{{ 'Fırsattan çıkar' if l.is_deal else 'Fırsata ekle' }}</button></form>
+      <form method="post" action="{{ url_for('admin.listing_status', lid=l.id) }}">{{ csrf_field() }}
+        <select name="status" style="width:auto;padding:5px 8px">{% for k, v in [('active', 'Yayınla'), ('paused', 'Duraklat'), ('blocked', 'Engelle'), ('removed', 'Kaldır')] %}<option value="{{ k }}" {{ 'selected' if l.status == k }}>{{ v }}</option>{% endfor %}</select>
+        <button class="btn btn-sm" type="submit">Uygula</button></form>
+    </div></td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('İlan bulunamadı') }}</div>{% endif %}
+{% endblock %}

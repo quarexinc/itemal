@@ -1,0 +1,29 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}Çekilişler{% endblock %}
+{% block heading %}Çekilişler{% endblock %}
+{% block panel %}
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Toplam çekiliş</div><div class="v">{{ kpi.n }}</div></div>
+  <div class="stat good"><div class="k">Açık</div><div class="v">{{ kpi.open_n }}</div></div>
+  <div class="stat"><div class="k">Toplam katılım</div><div class="v">{{ kpi.entries }}</div></div>
+  <div class="stat"><div class="k">Özellik</div><div class="v" style="font-size:1.1rem">{{ 'Açık' if enabled else 'Kapalı' }}</div>
+    <form method="post" action="{{ url_for('admin.giveaway_setting') }}" class="mt">{{ csrf_field() }}<input type="hidden" name="enabled" value="{{ '0' if enabled else '1' }}"><button class="btn btn-line btn-sm" type="submit">{{ 'Kapat' if enabled else 'Aç' }}</button></form></div>
+</div>
+<div class="tabs">
+  <a class="{{ 'on' if not flt }}" href="{{ url_for('admin.giveaways_admin') }}">Hepsi</a>
+  {% for k, v in status.items() %}<a class="{{ 'on' if flt == k }}" href="{{ url_for('admin.giveaways_admin', durum=k) }}">{{ v[0] }}</a>{% endfor %}
+</div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>Çekiliş</th><th>Satıcı</th><th>Ödül</th><th class="right">Katılım</th><th>Bitiş</th><th>Durum</th><th></th></tr>
+  {% for gw in page.rows %}<tr>
+    <td><a href="{{ url_for('community.giveaway_view', gid=gw.id) }}" target="_blank" rel="noopener"><b>{{ gw.title[:46] }}</b></a><div class="muted small">#{{ gw.id }}{% if gw.need_follow %} &middot; takip şartı{% endif %}{% if gw.need_purchase %} &middot; alışveriş şartı{% endif %}</div></td>
+    <td><a href="{{ url_for('admin.user', uid=gw.seller_id) }}">{{ gw.store_name or gw.seller_name }}</a></td>
+    <td>{{ gw.prize[:40] }}</td><td class="right">{{ gw.entry_count }}</td><td class="nowrap">{{ gw.ends_at|dt }}</td>
+    <td><span class="badge b-{{ status[gw.status][1] }}">{{ status[gw.status][0] }}</span></td>
+    <td class="actions">{% if gw.status == 'open' %}<form method="post" action="{{ url_for('admin.giveaway_cancel_admin', gid=gw.id) }}" data-confirm="Çekiliş iptal edilsin mi?">{{ csrf_field() }}<button class="btn btn-danger btn-sm" type="submit">İptal et</button></form>{% endif %}</td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Çekiliş yok') }}</div>{% endif %}
+{% endblock %}

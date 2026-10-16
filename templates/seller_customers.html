@@ -1,0 +1,28 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import pager, empty, avatar %}
+{% block title %}Müşterilerim{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Müşterilerim</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('seller.customers_csv') }}">CSV olarak indir</a></div>
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Müşteri</div><div class="v">{{ sums.n }}</div></div>
+  <div class="stat good"><div class="k">Tekrar alışveriş yapan</div><div class="v">{{ sums.repeat }}</div><div class="s">{% if sums.n %}%{{ (sums.repeat * 100 / sums.n)|round|int }} sadakat oranı{% endif %}</div></div>
+  <div class="stat"><div class="k">Toplam ciro</div><div class="v">{{ sums.spent|money }}</div></div>
+  <div class="stat"><div class="k">Müşteri başı</div><div class="v">{{ ((sums.spent / sums.n)|int if sums.n else 0)|money }}</div><div class="s">Ortalama harcama</div></div>
+</div>
+<form class="filters" method="get" action="{{ url_for('seller.customers') }}">
+  <div class="field grow"><label for="q">Kullanıcı adı</label><input type="search" id="q" name="q" value="{{ text }}"></div>
+  <div class="field"><label for="sirala">Sırala</label><select id="sirala" name="sirala">{% for k, v in sorts.items() %}<option value="{{ k }}" {{ 'selected' if sort == k }}>{{ v[0] }}</option>{% endfor %}</select></div>
+  <div class="field"><button class="btn" type="submit">Uygula</button></div>
+</form>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>Müşteri</th><th class="right">Sipariş</th><th class="right">Adet</th><th class="right">Toplam harcama</th><th>İlk alışveriş</th><th>Son alışveriş</th><th></th></tr>
+  {% for c in page.rows %}<tr>
+    <td><div class="row" style="flex-wrap:nowrap">{{ avatar(c.username, c.avatar, 'sm') }}<b>{{ c.username }}</b></div></td>
+    <td class="right">{{ c.orders }}</td><td class="right">{{ c.qty }}</td><td class="right nowrap">{{ c.spent|money }}</td>
+    <td class="nowrap muted">{{ c.first_at|dt(false) }}</td><td class="nowrap">{{ c.last_at|dt }}</td>
+    <td>{% if c.orders >= 5 %}<span class="badge b-ok">Sadık müşteri</span>{% elif c.orders >= 2 %}<span class="badge b-info">Tekrar müşteri</span>{% else %}<span class="badge b-muted">Yeni</span>{% endif %}</td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Henüz müşterin yok', 'İlk siparişten sonra alıcılar burada listelenir.') }}</div>{% endif %}
+{% endblock %}

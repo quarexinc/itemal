@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty, ic with context %}
+{% from "_community.html" import gw_card with context %}
+{% block title %}Çekilişler{% endblock %}
+{% block content %}
+<div class="container section">
+  <div class="cat-hero gw-hero">
+    <div><h1 class="mb0">{{ ic('gift') }} Çekilişler</h1><p class="muted mb0">Mağazaların düzenlediği çekilişlere katıl; kazananlar kura ile belirlenir.</p></div>
+    {% if can_sell %}<a class="btn" href="{{ url_for('seller.giveaways') }}">Çekiliş düzenle</a>{% endif %}
+  </div>
+  <div class="section-h mt"><h2>Devam eden çekilişler</h2></div>
+  {% if open_rows %}<div class="gw-grid">{% for gw in open_rows %}{{ gw_card(gw, gw.id in mine, remaining(gw.ends_at)) }}{% endfor %}</div>
+  {% else %}<div class="card">{{ empty('Şu an açık çekiliş yok', 'Takip ettiğin mağazalar çekiliş başlattığında burada ve bildirimlerinde görünür.') }}</div>{% endif %}
+  {% if done %}
+  <div class="section-h mt"><h2>Son sonuçlanan çekilişler</h2></div>
+  <div class="gw-grid">{% for gw in done %}{{ gw_card(gw, gw.id in mine) }}{% endfor %}</div>
+  {% endif %}
+</div>
+{% endblock %}

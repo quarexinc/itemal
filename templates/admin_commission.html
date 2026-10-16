@@ -1,0 +1,38 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import bars, empty %}
+{% block title %}Komisyon Raporu{% endblock %}
+{% block heading %}Komisyon raporu{% endblock %}
+{% block panel %}
+<div class="spread mb">
+  <p class="muted" style="margin:0">Genel komisyon: <b>%{{ global_rate }}</b> &middot; Çekim kesintisi: <b>%{{ fee_rate }}</b> &middot; Öncelik: satıcıya özel, kategori, genel.</p>
+  <a class="btn btn-line" href="{{ url_for('admin.commission_csv') }}">CSV indir</a>
+</div>
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Sipariş</div><div class="v">{{ totals.orders }}</div></div>
+  <div class="stat"><div class="k">Toplam ciro</div><div class="v">{{ totals.gmv|money }}</div></div>
+  <div class="stat good"><div class="k">Satış komisyonu</div><div class="v">{{ totals.fee|money }}</div></div>
+  <div class="stat"><div class="k">Çekim kesintileri</div><div class="v">{{ totals.wd_fee|money }}</div><div class="s">Kupon maliyeti {{ totals.discount|money }} &middot; Doping geliri {{ totals.doping|money }}</div></div>
+</div>
+<div class="card mb"><h3 class="mt0">Günlük komisyon (son 14 gün)</h3>{{ bars(chart, true) }}</div>
+<div class="grid g2">
+  <div class="card">
+    <h3 class="mt0">Kategoriye göre</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Kategori</th><th>Oran</th><th class="right">Sipariş</th><th class="right">Ciro</th><th class="right">Komisyon</th></tr>
+      {% for c in by_cat %}<tr><td>{{ c.name }}</td><td>{{ ('%' ~ c.commission_rate) if c.commission_rate is not none else 'Genel' }}</td><td class="right">{{ c.orders }}</td><td class="right nowrap">{{ c.gmv|money }}</td><td class="right nowrap">{{ c.fee|money }}</td></tr>{% endfor %}
+    </table></div>
+  </div>
+  <div class="card">
+    <h3 class="mt0">En çok komisyon getiren satıcılar</h3>
+    {% if by_seller %}<div class="table-wrap"><table>
+      <tr><th>Satıcı</th><th>Oran</th><th class="right">Sipariş</th><th class="right">Ciro</th><th class="right">Komisyon</th></tr>
+      {% for s in by_seller %}<tr><td><a href="{{ url_for('admin.user', uid=s.id) }}">{{ s.username }}</a>{{ pkg_marks(s.id) }}</td><td>{{ ('%' ~ s.commission_rate) if s.commission_rate is not none else 'Genel' }}</td><td class="right">{{ s.orders }}</td><td class="right nowrap">{{ s.gmv|money }}</td><td class="right nowrap">{{ s.fee|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Henüz satış yok') }}{% endif %}
+  </div>
+</div>
+<div class="card mt">
+  <h3 class="mt0">Özel oranlı satıcılar</h3>
+  {% if custom %}<div class="row">{% for u in custom %}<a class="chip" href="{{ url_for('admin.user', uid=u.id) }}">{{ u.username }}{{ pkg_marks(u.id) }} &middot; %{{ u.commission_rate }}</a>{% endfor %}</div>
+  {% else %}<p class="muted">Özel oran tanımlı satıcı yok. Oranı, satıcının kullanıcı sayfasından belirleyebilirsin.</p>{% endif %}
+</div>
+{% endblock %}

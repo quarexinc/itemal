@@ -1,0 +1,22 @@
+{% extends "seller_base.html" %}
+{% block title %}Komisyon{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Komisyon ve kesintiler</h1></div>
+<div class="grid g3 mb">
+  <div class="stat"><div class="k">Bugüne kadar ödenen komisyon</div><div class="v">{{ totals.fee|money }}</div></div>
+  <div class="stat"><div class="k">Brüt ciro</div><div class="v">{{ totals.gross|money }}</div></div>
+  <div class="stat"><div class="k">Para çekme kesintisi</div><div class="v">%{{ fee_rate }}</div><div class="s">Çekim tutarı üzerinden</div></div>
+</div>
+<div class="card mb">
+  <h3 class="mt0">Kategorilere göre komisyon oranların</h3>
+  <p class="muted">Bir satışta uygulanan oran sipariş anında sabitlenir ve sonradan değişmez. Öncelik sırası: sana özel oran, kategori oranı, genel oran.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Kategori</th><th class="right">Oran</th><th>Kaynak</th><th class="right">100 TL'lik satışta net</th></tr>
+    {% for r in rows %}<tr><td>{{ r.cat.name }}</td><td class="right"><b>%{{ r.rate }}</b></td><td class="muted">{{ r.source }}</td><td class="right nowrap">{{ (10000 - (10000 * r.rate / 100)|round|int)|money }}</td></tr>{% endfor %}
+  </table></div>
+</div>
+<div class="card">
+  <h3 class="mt0">Nasıl hesaplanır?</h3>
+  <p class="muted mt0">Komisyon = satış tutarı x oran. Satıcı kazancı = satış tutarı - komisyon; anında bakiyene eklenir. Alıcıdan ek ücret alınmaz. Oranlarla ilgili özel bir talebin varsa <a href="{{ url_for('ticket_new') }}">destek talebi</a> açabilirsin.</p>
+</div>
+{% endblock %}

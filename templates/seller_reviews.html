@@ -1,0 +1,25 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import pager, empty, stars, rating_line %}
+{% block title %}Yorumlar{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Müşteri yorumları</h1>{{ rating_line(stats.rating, stats.reviews) }}</div>
+<div class="tabs">
+  <a class="{{ 'on' if not only_open }}" href="{{ url_for('seller.reviews') }}">Tümü</a>
+  <a class="{{ 'on' if only_open }}" href="{{ url_for('seller.reviews', durum='yanitsiz') }}">Yanıt bekleyenler</a>
+</div>
+{% if page.rows %}
+<div class="card">
+  {% for r in page.rows %}
+  <div class="review">
+    <div class="who">{{ stars(r.rating, true) }}<b>{{ r.buyer_name|mask }}</b><span class="muted small">{{ r.listing_title[:50] }} &middot; {{ r.created_at|dt }}</span></div>
+    <div class="pre">{{ r.comment or 'Yorum yazılmadı.' }}</div>
+    {% if r.seller_reply %}<div class="reply"><b>Yanıtın:</b> {{ r.seller_reply }}</div>{% endif %}
+    <form method="post" action="{{ url_for('seller.review_reply', rid=r.id) }}" class="mt">
+      {{ csrf_field() }}
+      <div class="row" style="flex-wrap:nowrap"><input type="text" name="reply" maxlength="300" placeholder="{{ 'Yanıtı güncelle' if r.seller_reply else 'Yoruma yanıt yaz' }}" required><button class="btn btn-ghost btn-sm" type="submit">Yanıtla</button></div>
+    </form>
+  </div>
+  {% endfor %}
+</div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Henüz yorum yok', 'Alıcılar siparişlerinin ardından yorum bırakabilir.') }}</div>{% endif %}
+{% endblock %}

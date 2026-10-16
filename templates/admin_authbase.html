@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="tr" data-upmax="{{ upload_max }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}{% block heading %}Yönetici{% endblock %}{% endblock %} | {{ site_name }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='boot.js') }}"></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body class="app">
+{% include "_sprite.html" %}
+<div class="a-login{% block wrap_class %}{% endblock %}">
+  <div class="center mb"><a class="brand" href="{{ url_for('index') }}" style="justify-content:center"><img class="brand-mark" src="{{ url_for('static', filename='logo.svg') }}" width="32" height="32" alt="">{{ site_name }}</a></div>
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<div class="container flashes">{% for c, m in msgs %}<div class="flash flash-{{ c }}"><span>{{ m }}</span><button type="button" class="x" aria-label="Kapat">&times;</button></div>{% endfor %}</div>{% endif %}
+  {% endwith %}
+  <div class="card">
+    <div class="spread mb"><h1 style="font-size:1.25rem;margin:0">{{ self.heading() }}</h1><span class="tag-admin">ADMIN</span></div>
+    {% block panel %}{% endblock %}
+  </div>
+</div>
+</body>
+</html>

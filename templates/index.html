@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% from "_macros.html" import listing_card, strip, empty, ic, avatar, badge_list, stars with context %}
+{% block title %}Güvenli E-pin Pazaryeri{% endblock %}
+{% block content %}
+
+<section class="hero-wrap">
+  <div class="container">
+    <div class="slider" data-slider data-interval="{{ cfg.hero_seconds or 6 }}">
+      {% for b in hero %}
+      <div class="slide{{ ' ad' if b.is_ad }}" style="--c1:{{ b.color1 }};--c2:{{ b.color2 }}">
+        <span class="shape a"></span><span class="shape b"></span><span class="shape c"></span>
+        {% if b.image %}<img class="slide-img" src="{{ url_for('media_cover', name=b.image) }}" alt="">{% endif %}
+        <div class="slide-body">
+          <span class="kicker{{ ' kicker-ad' if b.is_ad }}">{{ ic('bolt') }} {{ 'Reklam' if b.is_ad else 'Kampanya' }}</span>
+          <h2>{{ b.title }}</h2>
+          {% if b.subtitle %}<p>{{ b.subtitle }}</p>{% endif %}
+          {% if b.cta_text %}<a class="btn btn-lg" href="{{ url_for('site.banner_go', bid=b.id) }}">{{ b.cta_text }} {{ ic('arrow-right') }}</a>{% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="slide" style="--c1:#5b3fd6;--c2:#1b1140">
+        <span class="shape a"></span><span class="shape b"></span><span class="shape c"></span>
+        <div class="slide-body">
+          <span class="kicker">{{ ic('bolt') }} {{ site_name }}</span>
+          <h2>Oyun ve dijital kodlar, anında teslim.</h2>
+          <p>{{ cfg.site_tagline }}.</p>
+          <a class="btn btn-lg" href="{{ url_for('listings') }}">İlanlara göz at {{ ic('arrow-right') }}</a>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="dots"></div>
+      <button class="sl-arrow sl-prev" type="button" data-dir="-1" aria-label="Önceki">{{ ic('chevron-left') }}</button>
+      <button class="sl-arrow sl-next" type="button" data-dir="1" aria-label="Sonraki">{{ ic('chevron-right') }}</button>
+    </div>
+
+    <div class="trust">
+      <div><span class="ti">{{ ic('bolt') }}</span><span><b>Anında teslimat</b><small>Kod ödeme anında hesabında</small></span></div>
+      <div><span class="ti">{{ ic('shield-check') }}</span><span><b>Emanet korumalı</b><small>Onaylayana kadar bloke</small></span></div>
+      <div><span class="ti">{{ ic('lock') }}</span><span><b>Güvenli bakiye</b><small>Tüm işlemler kayıt altında</small></span></div>
+      <div><span class="ti">{{ ic('life-buoy') }}</span><span><b>Canlı destek</b><small>{{ cfg.support_hours or 'Her gün' }}</small></span></div>
+    </div>
+  </div>
+</section>
+
+{% if ticker %}
+<div class="ticker mt" aria-label="Canlı akış">
+  <div class="ticker-track">
+    {% for rep in range(2) %}{% for t in ticker %}
+    <span class="ticker-item"><span class="live"></span>
+      {% if t.kind == 'sale' %}<b>{{ t.who|mask }}</b> satın aldı: {{ t.text }}{% if t.qty > 1 %} x{{ t.qty }}{% endif %}
+      {% else %}<b>{{ t.who }}</b>{{ pkg_marks(t.uid) }} yeni ilan ekledi: {{ t.text }}{% endif %}
+      <span class="dim">{{ t.at|ago }}</span></span>
+    {% endfor %}{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h">
+      <div><h2>{{ ic('flame') }} Günün oyunları</h2><p>En çok tercih edilen oyun ve platformlar, tek tıkla ilanlara git.</p></div>
+      <div class="deal-head"><span class="small muted">Gün sonuna</span>
+        <div class="countdown" data-countdown="{{ left }}"><span class="h">00<small>sa</small></span><span class="m">00<small>dk</small></span><span class="s">00<small>sn</small></span></div>
+      </div>
+    </div>
+    <div class="posters">
+      {% for c in daily[:8] %}
+      <a class="poster reveal" data-tilt style="--c:{{ c.color or '#7c5cff' }};--d:{{ loop.index0 }}" href="{{ url_for('listings', kategori=c.slug) }}">
+        <img src="{{ category_banner_url(c, 'card') }}" alt="{{ c.name }}" loading="lazy" width="720" height="960">
+        <span class="poster-tag">{{ ic('flame') }} Günün seçimi</span>
+        <div class="poster-body"><b>{{ c.name }}</b><small>{% if c.n %}{{ c.n }} ilan &middot; {{ c.min_price|money }}'den başlayan{% else %}{{ c.tagline or 'Yakında' }}{% endif %}</small></div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if strips|length > 0 %}<section class="container reveal">{{ strip(strips[0]) }}</section>{% endif %}
+
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h">
+      <div><h2>{{ ic('grid') }} Kategoriler</h2><p>{{ categories|length }} kategoride oyun kodu, hediye kartı ve abonelik.</p></div>
+      <a class="more" href="{{ url_for('site.categories') }}">Tümünü gör {{ ic('arrow-right') }}</a>
+    </div>
+    <div class="cat-filter">
+      <button type="button" class="on" data-g="*">Tümü</button>
+      {% for g in groups %}<button type="button" data-g="{{ g }}">{{ g }}</button>{% endfor %}
+    </div>
+    <div class="cat-grid">
+      {% for c in categories %}
+      <a class="cat-tile" data-g="{{ c.grp }}" style="--c:{{ c.color or '#7c5cff' }}" href="{{ url_for('listings', kategori=c.slug) }}">
+        <span class="cat-ic cat-ic-img"><img src="{{ category_banner_url(c, 'card') }}" alt="" loading="lazy"></span>
+        <span><b>{{ c.name }}</b><small>{{ c.n }} ilan</small></span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if deals %}
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h">
+      <div><h2>{{ ic('percent') }} Fırsat ürünleri</h2><p>Sınırlı süreli indirimler.</p></div>
+      <a class="more" href="{{ url_for('listings', sirala='ucuz') }}">Daha fazla {{ ic('arrow-right') }}</a>
+    </div>
+    <div class="lgrid">{% for l in deals %}{{ listing_card(l) }}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if featured %}
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h"><div><h2>{{ ic('crown') }} Öne çıkan ilanlar</h2><p>Editörlerin ve alıcıların seçtikleri.</p></div></div>
+    <div class="lgrid">{% for l in featured %}{{ listing_card(l) }}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if strips|length > 1 %}<section class="container reveal">{{ strip(strips[1]) }}</section>{% endif %}
+
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h"><div><h2>{{ ic('clock') }} Yeni eklenenler</h2><p>Satıcıların az önce yayınladığı ilanlar.</p></div><a class="more" href="{{ url_for('listings') }}">Tüm ilanlar {{ ic('arrow-right') }}</a></div>
+    {% if latest %}<div class="lgrid">{% for l in latest %}{{ listing_card(l) }}{% endfor %}</div>
+    {% else %}<div class="card">{{ empty('Henüz ilan yok', 'İlk ilanı vermek için satıcı başvurusu yap.') }}</div>{% endif %}
+  </div>
+</section>
+
+{% if popular %}
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h"><div><h2>{{ ic('trend') }} Çok satanlar</h2><p>Bu hafta en çok tercih edilenler.</p></div></div>
+    <div class="lgrid">{% for l in popular %}{{ listing_card(l) }}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+{% for b in strips[2:] %}<section class="container reveal mt">{{ strip(b) }}</section>{% endfor %}
+
+{% if seller_cards %}
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h"><div><h2>{{ ic('store') }} Öne çıkan satıcılar</h2><p>Satış ve puanlarına göre en güvenilir mağazalar.</p></div><a class="more" href="{{ url_for('site.sellers') }}">Tüm mağazalar {{ ic('arrow-right') }}</a></div>
+    <div class="sellers">
+      {% for sc in seller_cards %}{% set s = sc.u %}
+      <a class="seller-card{{ ' pk-gold' if s.pk_rank == 1 }}{{ ' pk-diamond' if s.pk_rank == 2 }}" href="{{ url_for('storefront', username=s.username) }}">
+        {{ avatar(s.username, s.avatar) }}
+        <div>
+          <b>{{ s.store_name or s.username }}{{ pkg_marks(s.id) }}</b>
+          <div class="small muted">{% if s.rc %}<span class="pos">{{ '%.1f'|format(s.avg) }}</span> puan &middot; {% endif %}{{ s.sold }} satış &middot; {{ s.n_listings }} ilan</div>
+          {{ badge_list(sc.badges) }}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if reviews %}
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h"><div><h2>{{ ic('star') }} Alıcı yorumları</h2><p>Alıcıların bıraktığı son değerlendirmeler.</p></div></div>
+    <div class="revs">
+      {% for r in reviews %}
+      <a class="rev-card" href="{{ url_for('listing_detail', lid=r.lid) }}">
+        {{ stars(r.rating, true) }}
+        <p>{{ r.comment }}</p>
+        <div class="small muted"><b>{{ r.buyer_name|mask }}</b> &middot; {{ r.listing_title }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section reveal">
+  <div class="container">
+    <div class="stat-band">
+      <div><b data-count="{{ stats.sold }}">{{ stats.sold }}</b><span>teslim edilen kod</span></div>
+      <div><b data-count="{{ stats.listings }}">{{ stats.listings }}</b><span>aktif ilan</span></div>
+      <div><b data-count="{{ stats.sellers }}">{{ stats.sellers }}</b><span>satıcı</span></div>
+      <div><b data-count="{{ stats.users }}">{{ stats.users }}</b><span>üye</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section reveal">
+  <div class="container">
+    <div class="section-h"><div><h2>Nasıl çalışır?</h2></div><a class="more" href="{{ url_for('faq') }}">Ayrıntılar {{ ic('arrow-right') }}</a></div>
+    <div class="steps">
+      <div class="step"><h3>Bakiye yükle</h3><p>Aktif ödeme yöntemlerinden birini seç, bildirimini gönder.</p></div>
+      <div class="step"><h3>İlanı seç</h3><p>Kategori, fiyat ve satıcı puanına göre karşılaştır.</p></div>
+      <div class="step"><h3>Satın al</h3><p>Kodlar ödeme anında sipariş sayfanda görünür.</p></div>
+      <div class="step"><h3>Değerlendir</h3><p>Satıcıya puan ver, sorun olursa destek talebi aç.</p></div>
+    </div>
+    {% if not can_sell %}
+    <div class="cta-band mt">
+      <div><h3>Sen de satmaya başla</h3><p>Kimliğini doğrula, ilan ver, kazancını çek. Komisyon oranı ilan verirken net kazancınla birlikte görünür.</p></div>
+      <a class="btn btn-lg" href="{{ url_for('seller_apply') }}">Satıcı ol {{ ic('arrow-right') }}</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

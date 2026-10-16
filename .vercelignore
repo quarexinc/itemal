@@ -1,0 +1,12 @@
+.env
+.env.*
+data/
+uploads/
+__pycache__/
+*.pyc
+*.db
+*.db-*
+p.out
+docs/
+tools/
+README.md

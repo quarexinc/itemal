@@ -1,0 +1,88 @@
+{% extends "admin_base.html" %}
+{% macro chk(key, label) %}<label class="check field"><input type="checkbox" name="{{ key }}" value="1" {{ 'checked' if (request.form.get(key) if request.method == 'POST' else cfg[key] == '1') }}> <span>{{ label }}</span></label>{% endmacro %}
+{% macro val(key) %}{{ request.form.get(key, cfg[key]) }}{% endmacro %}
+{% block title %}Site Ayarları{% endblock %}
+{% block heading %}Site ayarları{% endblock %}
+{% block panel %}
+<form method="post" action="{{ url_for('admin.site_settings') }}" class="grid" style="gap:16px;max-width:900px">
+  {{ csrf_field() }}
+  <div class="card">
+    <h3 class="mt0">Genel</h3>
+    <div class="form-row">
+      <div class="field"><label for="site_name">Site adı</label><input type="text" id="site_name" name="site_name" value="{{ val('site_name') }}" required maxlength="30"></div>
+      <div class="field"><label for="support_email">Destek e-postası</label><input type="email" id="support_email" name="support_email" value="{{ val('support_email') }}" maxlength="120"></div>
+    </div>
+    <div class="field"><label for="site_tagline">Slogan</label><input type="text" id="site_tagline" name="site_tagline" value="{{ val('site_tagline') }}" maxlength="120"></div>
+    <div class="field"><label for="meta_description">Arama motoru açıklaması (meta description)</label><input type="text" id="meta_description" name="meta_description" value="{{ val('meta_description') }}" maxlength="200"></div>
+    <div class="field"><label for="announcement">Duyuru çubuğu (sitenin üstünde görünür, boşsa gizlenir)</label><input type="text" id="announcement" name="announcement" value="{{ val('announcement') }}" maxlength="300"></div>
+    <div class="form-row">
+      <div class="field"><label for="support_hours">Destek saatleri</label><input type="text" id="support_hours" name="support_hours" value="{{ val('support_hours') }}" maxlength="60"></div>
+      <div class="field"><label for="hero_seconds">Slider geçiş süresi (sn)</label><input type="number" id="hero_seconds" name="hero_seconds" min="3" max="20" value="{{ val('hero_seconds') }}" required></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="mt0">Emanet</h3>
+    <div class="form-row">
+      <div class="field"><label for="escrow_days">Otomatik aktarım süresi (gün)</label><input type="number" id="escrow_days" name="escrow_days" min="0" max="30" value="{{ val('escrow_days') }}" required><div class="hint">Alıcı onaylamazsa tutar bu süre sonunda satıcıya geçer. 0: sipariş anında geçer.</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="mt0">Sosyal medya</h3>
+    <div class="form-row">
+      <div class="field"><label for="social_discord">Discord davet bağlantısı</label><input type="url" id="social_discord" name="social_discord" value="{{ val('social_discord') }}" maxlength="200" placeholder="https://discord.gg/..."></div>
+      <div class="field"><label for="social_telegram">Telegram bağlantısı</label><input type="url" id="social_telegram" name="social_telegram" value="{{ val('social_telegram') }}" maxlength="200" placeholder="https://t.me/..."></div>
+    </div>
+    <div class="field"><label for="social_instagram">Instagram bağlantısı</label><input type="url" id="social_instagram" name="social_instagram" value="{{ val('social_instagram') }}" maxlength="200" placeholder="https://instagram.com/..."></div>
+    <div class="hint">Doldurulan bağlantılar site altbilgisinde simge olarak görünür.</div>
+  </div>
+
+  <div class="card">
+    <h3 class="mt0">Komisyon ve limitler</h3>
+    <div class="form-row">
+      <div class="field"><label for="commission_percent">Genel satış komisyonu (%)</label><input type="text" inputmode="decimal" id="commission_percent" name="commission_percent" value="{{ val('commission_percent') }}" required><div class="hint">Kategori veya satıcıya özel oran tanımlıysa o geçerlidir.</div></div>
+      <div class="field"><label for="withdraw_fee_percent">Çekim kesintisi (%)</label><input type="text" inputmode="decimal" id="withdraw_fee_percent" name="withdraw_fee_percent" value="{{ val('withdraw_fee_percent') }}" required></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="min_deposit">Minimum yükleme (TL)</label><input type="text" inputmode="decimal" id="min_deposit" name="min_deposit" value="{{ val('min_deposit') }}" required></div>
+      <div class="field"><label for="min_withdraw">Minimum çekim (TL)</label><input type="text" inputmode="decimal" id="min_withdraw" name="min_withdraw" value="{{ val('min_withdraw') }}" required></div>
+    </div>
+    <div class="field"><label for="max_qty_per_order">Sipariş başına maksimum adet</label><input type="number" id="max_qty_per_order" name="max_qty_per_order" min="1" max="100" value="{{ val('max_qty_per_order') }}" required></div>
+  </div>
+
+  <div class="card">
+    <h3 class="mt0">Mağaza değişiklik ücretleri</h3>
+    <div class="form-row">
+      <div class="field"><label for="fee_store_name">Mağaza adı değişikliği (TL)</label><input type="text" inputmode="decimal" id="fee_store_name" name="fee_store_name" value="{{ val('fee_store_name') }}" required></div>
+      <div class="field"><label for="fee_store_slug">Mağaza adresi değişikliği (TL)</label><input type="text" inputmode="decimal" id="fee_store_slug" name="fee_store_slug" value="{{ val('fee_store_slug') }}" required></div>
+    </div>
+    <div class="hint">Satıcının bakiyesinden düşülür. İlk belirleme ücretsizdir; yalnızca sonraki değişiklikler ücretlidir. 0 yazarsan ücret kalkar. Yönetici değişiklikleri ücretsizdir.</div>
+  </div>
+
+  <div class="card">
+    <h3 class="mt0">Güvenilir satıcı rozeti</h3>
+    <div class="form-row">
+      <div class="field"><label for="trusted_min_sales">Asgari satış adedi</label><input type="number" id="trusted_min_sales" name="trusted_min_sales" min="1" value="{{ val('trusted_min_sales') }}" required></div>
+      <div class="field"><label for="trusted_min_rating">Asgari ortalama puan (1-5)</label><input type="text" inputmode="decimal" id="trusted_min_rating" name="trusted_min_rating" value="{{ val('trusted_min_rating') }}" required></div>
+    </div>
+    <div class="hint">Rozet ayrıca en az 5 yorum ve onaylı kimlik ister. Yönetici, kullanıcı sayfasından rozetleri elle de verebilir.</div>
+  </div>
+
+  <div class="card">
+    <h3 class="mt0">Kurallar ve vitrin</h3>
+    {{ chk('require_seller_approval', 'Satıcı olmak için başvuru ve yönetici onayı gereksin') }}
+    {{ chk('withdraw_only_earnings', 'Yalnızca satış kazancı çekilebilsin (yüklenen bakiye çekilemesin)') }}
+    {{ chk('require_cover', 'İlanlarda kapak görseli zorunlu olsun') }}
+    {{ chk('allow_registration', 'Yeni üyelik açık olsun') }}
+    {{ chk('require_seller_2fa', 'Satıcı paneline girmek için iki adımlı doğrulama (2FA) zorunlu olsun') }}
+    {{ chk('home_ticker', 'Ana sayfada canlı satış / yeni ilan bandını göster') }}
+  </div>
+
+  <div class="card" style="border-color:rgba(251,191,36,.4)">
+    <h3 class="mt0">Bakım modu</h3>
+    {{ chk('maintenance_mode', 'Siteyi bakıma al (yönetici hariç kimse giremez, ziyaretçiler bakım sayfasını görür)') }}
+  </div>
+  <div><button class="btn" type="submit">Ayarları kaydet</button></div>
+</form>
+{% endblock %}

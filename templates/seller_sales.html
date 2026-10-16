@@ -1,0 +1,26 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import badge, pager, empty %}
+{% block title %}Satışlarım{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Satışlarım</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('seller.sales_csv', **f.to_dict()) }}">CSV olarak indir</a></div>
+<form class="filters" method="get" action="{{ url_for('seller.sales') }}">
+  <div class="field grow"><label for="q">Sipariş no veya alıcı</label><input type="search" id="q" name="q" value="{{ f.get('q', '') }}"></div>
+  <div class="field"><label for="ilan">İlan</label><select id="ilan" name="ilan"><option value="">Hepsi</option>{% for x in my_listings %}<option value="{{ x.id }}" {{ 'selected' if f.get('ilan', '') == x.id|string }}>{{ x.title[:40] }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="durum">Durum</label><select id="durum" name="durum"><option value="">Hepsi</option>{% for k, v in [('held', 'Emanette'), ('released', 'Tamamlandı'), ('disputed', 'İtiraz var'), ('refunded', 'İade edildi')] %}<option value="{{ k }}" {{ 'selected' if f.get('durum', '') == k }}>{{ v }} ({{ status_counts.get(k, 0) }})</option>{% endfor %}</select></div>
+  <div class="field"><label for="baslangic">Başlangıç</label><input type="date" id="baslangic" name="baslangic" value="{{ f.get('baslangic', '') }}"></div>
+  <div class="field"><label for="bitis">Bitiş</label><input type="date" id="bitis" name="bitis" value="{{ f.get('bitis', '') }}"></div>
+  <div class="field"><button class="btn" type="submit">Filtrele</button></div>
+</form>
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Adet</div><div class="v">{{ sums.qty }}</div></div>
+  <div class="stat"><div class="k">Brüt</div><div class="v">{{ sums.gross|money }}</div></div>
+  <div class="stat"><div class="k">Komisyon</div><div class="v">{{ sums.fee|money }}</div></div>
+  <div class="stat good"><div class="k">Net kazanç</div><div class="v">{{ sums.net|money }}</div></div>
+</div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>İlan</th><th>Alıcı</th><th class="right">Adet</th><th class="right">Toplam</th><th class="right">Komisyon</th><th class="right">Net</th><th>Durum</th></tr>
+  {% for o in page.rows %}<tr><td><a href="{{ url_for('order_detail', oid=o.id) }}">#{{ o.id }}</a></td><td class="nowrap">{{ o.created_at|dt }}</td><td>{{ o.listing_title[:40] }}</td><td>{{ o.buyer_name }}</td><td class="right">{{ o.quantity }}</td><td class="right nowrap">{{ o.total|money }}</td><td class="right nowrap muted">{{ o.commission|money }} (%{{ o.commission_rate }})</td><td class="right nowrap pos">{{ o.seller_earning|money }}</td><td>{{ badge(o.escrow_status) }}</td></tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Bu filtreyle eşleşen satış yok') }}</div>{% endif %}
+{% endblock %}

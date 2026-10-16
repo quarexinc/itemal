@@ -1,0 +1,47 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block heading %}Sistem ve araçlar{% endblock %}
+{% block panel %}
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Veritabanı</div><div class="v">{{ db_size }}</div></div>
+  <div class="stat"><div class="k">Yüklenen görseller</div><div class="v">{{ up_size }}</div></div>
+  <div class="stat"><div class="k">Kullanıcı / ilan</div><div class="v">{{ tables.users }} / {{ tables.listings }}</div></div>
+  <div class="stat"><div class="k">Son yedek</div><div class="v" style="font-size:1.05rem">{{ last_backup|dt if last_backup else 'Alınmadı' }}</div></div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <h3 class="mt0">Sağlık kontrolü</h3>
+    {% for c in checks %}<div class="sys-row {{ 'ok' if c.ok else 'bad' }}">{{ ic('check-circle' if c.ok else 'alert') }}<div>{{ c.title }}{% if not c.ok %}<small>{{ c.hint }}</small>{% endif %}</div></div>{% endfor %}
+  </div>
+  <div class="card">
+    <h3 class="mt0">Ortam</h3>
+    <dl class="kv">{% for k, v in info.items() %}<dt>{{ k }}</dt><dd class="small">{{ v }}</dd>{% endfor %}</dl>
+    <hr>
+    <h3>Kayıt sayıları</h3>
+    <dl class="kv">{% for k, v in tables.items() %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <h3 class="mt0">Veritabanı yedeği</h3>
+    <p class="muted">Tüm veritabanının anlık kopyasını indirir. Kullanıcı bilgileri ve kimlik verileri içerir; güvenli bir yerde sakla, kimseyle paylaşma. Yüklenen görseller <code class="inline">uploads/</code> klasöründedir, onu da ayrıca yedekle.</p>
+    <form method="post" action="{{ url_for('admin.backup') }}" data-confirm="Yedek indirilsin mi? Dosya kişisel veriler içerir.">{{ csrf_field() }}<button class="btn" type="submit">{{ ic('download') }}Yedeği indir</button></form>
+  </div>
+  <div class="card">
+    <h3 class="mt0">Demo veri</h3>
+    <p class="muted">Vitrini önizlemek için 30+ örnek mağaza, 60 kadar kapak görselli ilan ve örnek yorumlar ekler (mağaza başına en fazla 2 ilan, 10 yorum, 300 satış). Demo ilanlar satın alınabilir: alıcıya örnek kod teslim edilir, stok kendiliğinden yenilenir ve demo mağazaların kazancı çekilemez. Tek tıkla silinir. Bunlar önizleme içindir: canlıda gerçek alıcıdan para almadan önce satışı kapat ya da demo veriyi sil.</p>
+    {% if demo_loaded %}
+      <p><span class="badge b-warn">Yüklü</span> {{ demo_counts.listings }} ilan, {{ demo_counts.sellers }} mağaza, {{ demo_counts.reviews }} yorum</p>
+      <p>Demo ilan satışı: <span class="badge b-{{ 'ok' if demo_sales else 'muted' }}">{{ 'Açık' if demo_sales else 'Kapalı' }}</span></p>
+      <div class="row">
+        <form method="post" action="{{ url_for('admin.demo_action') }}">{{ csrf_field() }}<input type="hidden" name="action" value="{{ 'sales_off' if demo_sales else 'sales_on' }}"><button class="btn btn-line" type="submit">{{ 'Demo satışını kapat' if demo_sales else 'Demo satışını aç' }}</button></form>
+        <form method="post" action="{{ url_for('admin.demo_action') }}" data-confirm="Tüm demo veri silinsin mi?">{{ csrf_field() }}<input type="hidden" name="action" value="clear"><button class="btn btn-danger" type="submit">{{ ic('trash') }}Demo veriyi sil</button></form>
+      </div>
+    {% else %}
+      <form method="post" action="{{ url_for('admin.demo_action') }}" data-confirm="Demo veri yüklensin mi? İşlem birkaç saniye sürebilir.">{{ csrf_field() }}<input type="hidden" name="action" value="load"><button class="btn" type="submit">{{ ic('plus') }}Demo veri yükle</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

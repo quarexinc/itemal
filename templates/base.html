@@ -1,0 +1,140 @@
+{%- from "_macros.html" import ic with context -%}
+<!doctype html>
+<html lang="tr" data-upmax="{{ upload_max }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Ana Sayfa{% endblock %} | {{ site_name }}</title>
+<meta name="description" content="{% block desc %}{{ cfg.meta_description or cfg.site_tagline }}{% endblock %}">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="csrf" content="{{ csrf_token() }}">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='boot.js') }}"></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+{% block head_extra %}{% endblock %}
+</head>
+<body{% block body_class %}{% endblock %}{% block body_attr %}{% endblock %}{% if me %} data-live="{{ url_for('trust.live') }}" data-uid="{{ me.id }}"{% endif %}>
+{% include "_sprite.html" %}
+{% if cfg.announcement %}<div class="announce">{{ cfg.announcement }}</div>{% endif %}
+{% block site_header %}
+<header class="topbar" id="topbar">
+  <div class="container topbar-in">
+    <a class="brand" href="{{ url_for('index') }}"><img class="brand-mark" src="{{ url_for('static', filename='logo.svg') }}" width="32" height="32" alt="">{{ site_name }}</a>
+    <nav class="nav" aria-label="Ana menü">
+      <a href="{{ url_for('listings') }}" class="{{ 'on' if request.endpoint == 'listings' }}">İlanlar</a>
+      <a href="{{ url_for('site.categories') }}" class="{{ 'on' if request.endpoint == 'site.categories' }}">Kategoriler</a>
+      <a href="{{ url_for('site.sellers') }}" class="{{ 'on' if request.endpoint == 'site.sellers' }}">Mağazalar</a>
+      <a href="{{ url_for('community.giveaways') }}" class="{{ 'on' if request.endpoint in ('community.giveaways', 'community.giveaway_view') }}">Çekilişler</a>
+      <a href="{{ url_for('faq') }}" class="{{ 'on' if request.endpoint == 'faq' }}">Nasıl Çalışır</a>
+      {% if me %}<a href="{{ url_for('tickets') }}" class="{{ 'on' if request.endpoint and request.endpoint.startswith('ticket') }}">Destek{% if answered_tickets %} <span class="dot-count">{{ answered_tickets }}</span>{% endif %}</a>{% endif %}
+    </nav>
+    <div class="search">
+      <form action="{{ url_for('listings') }}" method="get" role="search">
+        {{ ic('search') }}
+        <input type="search" name="q" data-suggest="{{ url_for('site.search_suggest') }}" autocomplete="off" placeholder="Oyun, kart veya abonelik ara" value="{{ request.args.get('q', '') if request.endpoint == 'listings' }}" maxlength="60" aria-label="Ara">
+        <kbd>/</kbd>
+      </form>
+      <div class="suggest" role="listbox"></div>
+    </div>
+    <div class="top-right">
+      {% if me %}
+        <a class="chip" href="{{ url_for('balance') }}" title="Bakiye yükle">{{ ic('wallet') }}<span id="bal-val">{{ me.balance|money }}</span></a>
+        <a class="ibtn" href="{{ url_for('site.favorites') }}" title="Favorilerim" aria-label="Favorilerim">{{ ic('heart') }}<span class="dot" id="fav-count" {% if not fav_total %}hidden{% endif %}>{{ fav_total }}</span></a>
+        <a class="ibtn" href="{{ url_for('inbox') }}" title="Mesajlar" aria-label="Mesajlar">{{ ic('message') }}{% if unread_chat %}<span class="dot">{{ unread_chat }}</span>{% endif %}</a>
+        <div class="dd">
+          <button class="ibtn" type="button" data-dd-toggle data-notif-url="{{ url_for('site.notif_read') }}" {% if notif_unread %}data-notif="{{ url_for('site.notif_read') }}"{% endif %} aria-label="Bildirimler">{{ ic('bell') }}{% if notif_unread %}<span class="dot">{{ notif_unread if notif_unread < 10 else '9+' }}</span>{% endif %}</button>
+          <div class="dd-menu dd-notif">
+            <div class="n-head"><span>Bildirimler</span><span class="row" style="gap:10px"><button type="button" class="link-btn" data-sound-toggle>Ses: Açık</button><a class="small" href="{{ url_for('site.notifications') }}">Tümü</a></span></div>
+            <div class="n-list">
+              {% for n in notif_recent %}
+              <a class="n-item {{ 'unread' if not n.is_read }}" href="{{ url_for('site.notif_view', nid=n.id) }}"><b>{{ n.title }}</b>{% if n.body %}<small>{{ n.body }}</small>{% endif %}<small>{{ n.created_at|ago }}</small></a>
+              {% else %}<div class="n-empty">Yeni bildirimin yok.</div>{% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="dd">
+          <button class="ibtn" type="button" data-dd-toggle aria-label="Hesap menüsü">{{ ic('user') }}</button>
+          <div class="dd-menu">
+            <div class="dd-head"><b>{{ me.username }}</b>{{ pkg_marks(me.id) }}<small>{{ me.balance|money }} bakiye</small></div>
+            <a href="{{ url_for('account') }}">{{ ic('home') }}Hesabım</a>
+            <a href="{{ url_for('orders') }}">{{ ic('receipt') }}Siparişlerim</a>
+            <a href="{{ url_for('balance') }}">{{ ic('wallet') }}Bakiye yükle</a>
+            <a href="{{ url_for('site.favorites') }}">{{ ic('heart') }}Favorilerim</a>
+            <a href="{{ url_for('community.following') }}">{{ ic('users') }}Takip ettiklerim</a>
+            <a href="{{ url_for('profile') }}">{{ ic('settings') }}Profil ayarları</a>
+            {% if can_sell %}<hr><a href="{{ url_for('seller.dashboard') }}">{{ ic('store') }}Satıcı paneli</a>{% endif %}
+            {% if is_admin %}<a href="{{ url_for('admin.dashboard') }}">{{ ic('shield') }}Yönetim paneli</a>{% endif %}
+            <hr>
+            <form method="post" action="{{ url_for('logout') }}">{{ csrf_field() }}<button class="dd-item" type="submit">{{ ic('logout') }}Çıkış yap</button></form>
+          </div>
+        </div>
+      {% else %}
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('login') }}">Giriş</a>
+        <a class="btn btn-sm" href="{{ url_for('register') }}">Kayıt Ol</a>
+        {% if is_admin %}<a class="chip" href="{{ url_for('admin.dashboard') }}">{{ ic('shield') }}Yönetim</a>{% endif %}
+      {% endif %}
+      <button class="ibtn nav-toggle" type="button" data-toggle-nav="#topbar" aria-label="Menü">{{ ic('menu') }}</button>
+    </div>
+  </div>
+  <div class="catbar">
+    <div class="catbar-in">
+      <a class="all" href="{{ url_for('listings') }}">Tüm ilanlar</a>
+      {% for c in nav_categories[:16] %}<a href="{{ url_for('listings', kategori=c.slug) }}" style="--c:{{ c.color or '#7c5cff' }}">{{ c.name }}</a>{% endfor %}
+      <a class="all" href="{{ url_for('site.categories') }}">Tümü {{ ic('chevron-right') }}</a>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+{% if msgs %}<div class="container flashes">{% for c, m in msgs %}<div class="flash flash-{{ c }}"><span>{{ m }}</span><button type="button" class="x" aria-label="Kapat">&times;</button></div>{% endfor %}</div>{% endif %}
+{% endwith %}
+
+{% if me %}<div class="perm-bar" id="perm-bar" hidden><span>Yeni mesaj ve bildirimleri sesli uyarıyla, sekme kapalıyken bile görmek ister misin?</span><div class="row"><button type="button" class="btn btn-sm" data-notif-enable>Bildirimleri aç</button><button type="button" class="btn btn-ghost btn-sm" data-notif-later>Sonra</button></div></div>{% endif %}
+<main>{% block content %}{% endblock %}</main>
+
+{% block site_footer %}
+<footer class="footer">
+  <div class="container">
+    <div class="footer-in">
+      <div>
+        <a class="brand" href="{{ url_for('index') }}"><img class="brand-mark" src="{{ url_for('static', filename='logo.svg') }}" width="32" height="32" alt="">{{ site_name }}</a>
+        <p class="mt small">{{ cfg.site_tagline }}. Kodlar satın alma anında hesabına teslim edilir; ödeme, sen onaylayana kadar emanette tutulur.</p>
+        <div class="socials">
+          {% if cfg.social_discord %}<a href="{{ cfg.social_discord }}" target="_blank" rel="noopener nofollow" aria-label="Discord">{{ ic('message') }}</a>{% endif %}
+          {% if cfg.social_telegram %}<a href="{{ cfg.social_telegram }}" target="_blank" rel="noopener nofollow" aria-label="Telegram">{{ ic('send') }}</a>{% endif %}
+          {% if cfg.social_instagram %}<a href="{{ cfg.social_instagram }}" target="_blank" rel="noopener nofollow" aria-label="Instagram">{{ ic('image') }}</a>{% endif %}
+          <a href="mailto:{{ cfg.support_email }}" aria-label="E-posta">{{ ic('mail') }}</a>
+        </div>
+      </div>
+      <div>
+        <h4>Pazaryeri</h4>
+        <ul>
+          <li><a href="{{ url_for('listings') }}">Tüm ilanlar</a></li>
+          <li><a href="{{ url_for('site.categories') }}">Kategoriler</a></li>
+          <li><a href="{{ url_for('site.sellers') }}">Mağazalar</a></li>
+          <li><a href="{{ url_for('seller_apply') }}">Satıcı ol</a></li>
+          <li><a href="{{ url_for('faq') }}">Nasıl çalışır</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Popüler kategoriler</h4>
+        <ul>{% for c in nav_categories[:5] %}<li><a href="{{ url_for('listings', kategori=c.slug) }}">{{ c.name }}</a></li>{% endfor %}</ul>
+      </div>
+      <div>
+        <h4>Destek</h4>
+        <ul>
+          <li><a href="{{ url_for('tickets') }}">Destek talebi oluştur</a></li>
+          <li><a href="mailto:{{ cfg.support_email }}">{{ cfg.support_email }}</a></li>
+          {% if cfg.support_hours %}<li>{{ cfg.support_hours }}</li>{% endif %}
+        </ul>
+      </div>
+    </div>
+    {% if pay_methods() %}<div class="pay-strip" aria-label="Kabul edilen ödeme yöntemleri"><span class="pay-lbl">Bakiye yükleme yöntemleri</span>{% for m in pay_methods() %}<a class="pay-chip" href="{{ url_for('balance', yontem=m.id) }}" style="--c:{{ m.color or '#7c5cff' }}">{{ ic(pay_icon(m.icon, m.kind)) }}{{ m.name }}</a>{% endfor %}</div>{% endif %}
+    <div class="copy"><span>&copy; {{ year }} {{ site_name }}. Tüm hakları saklıdır.</span><span>Tüm fiyatlar Türk Lirası cinsindendir.</span></div>
+  </div>
+</footer>
+{% endblock %}
+</body>
+</html>

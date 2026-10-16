@@ -1,0 +1,14 @@
+{% extends "admin_authbase.html" %}
+{% block heading %}Yönetici girişi{% endblock %}
+{% block panel %}
+<form method="post" action="{{ url_for('admin.login') }}" autocomplete="off">
+  {{ csrf_field() }}
+  <input type="hidden" name="ft" value="{{ ft }}">
+  {% if nxt %}<input type="hidden" name="next" value="{{ nxt }}">{% endif %}
+  <div class="hp-field" aria-hidden="true"><label for="website">Web sitesi</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px"></div>
+  <div class="field"><label for="username">Kullanıcı adı</label><input type="text" id="username" name="username" required autofocus autocomplete="username"></div>
+  <div class="field"><label for="password">Şifre</label><input type="password" id="password" name="password" required autocomplete="current-password"></div>
+  {% if captcha %}{{ captcha_block('admin') }}{% endif %}
+  <button class="btn btn-block" type="submit">Giriş yap</button>
+</form>
+{% endblock %}

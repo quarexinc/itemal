@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic, badge with context %}
+{% block title %}{{ n.title }}{% endblock %}
+{% block content %}
+<div class="container section" style="max-width:760px">
+  <div class="crumbs"><a href="{{ url_for('site.notifications') }}">Bildirimler</a> <span>/</span> <span>Ayrıntı</span></div>
+  <div class="card notif-detail nk-{{ kind }}">
+    <div class="nd-head">
+      <span class="nd-ico">{{ ic('check-circle' if kind == 'ok' else ('alert' if kind in ('bad', 'warn') else 'bell')) }}</span>
+      <div>
+        <span class="nk-tag nk-{{ kind }}">{{ label }}</span>
+        <h1>{{ n.title }}</h1>
+        <div class="muted small">{{ n.created_at|dt }} &middot; {{ n.created_at|ago }}</div>
+      </div>
+    </div>
+    {% if n.body %}<div class="nd-body pre">{{ n.body }}</div>{% endif %}
+    {% if order %}
+    <div class="nd-order">
+      <div class="spread"><b>Sipariş #{{ order.id }}</b>{{ badge(order.escrow_status) }}</div>
+      <dl class="kv">
+        <dt>İlan</dt><dd>{{ order.listing_title }}</dd>
+        <dt>Adet</dt><dd>{{ order.quantity }}</dd>
+        <dt>Toplam</dt><dd><b>{{ order.total|money }}</b></dd>
+        <dt>Alıcı / satıcı</dt><dd>{{ order.buyer_name }} / {{ order.seller_name }}</dd>
+        <dt>Tarih</dt><dd>{{ order.created_at|dt }}</dd>
+      </dl>
+    </div>
+    {% endif %}
+    <div class="row mt">
+      {% if n.link %}<a class="btn" href="{{ n.link }}">İlgili sayfaya git {{ ic('arrow-right') }}</a>{% endif %}
+      <a class="btn btn-ghost" href="{{ url_for('site.notifications') }}">Tüm bildirimler</a>
+      <form method="post" action="{{ url_for('site.notif_delete', nid=n.id) }}" data-confirm="Bu bildirim silinsin mi?">{{ csrf_field() }}<button class="btn btn-line" type="submit">Sil</button></form>
+    </div>
+  </div>
+  <div class="spread mt">
+    {% if next_n %}<a class="btn btn-ghost btn-sm" href="{{ url_for('site.notif_view', nid=next_n.id) }}">{{ ic('chevron-left') }}Önceki</a>{% else %}<span></span>{% endif %}
+    {% if prev_n %}<a class="btn btn-ghost btn-sm" href="{{ url_for('site.notif_view', nid=prev_n.id) }}">Sonraki{{ ic('chevron-right') }}</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

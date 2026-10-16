@@ -1,0 +1,56 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import empty %}
+{% block title %}Entegrasyon ve API{% endblock %}
+{% block heading %}Entegrasyon ve API{% endblock %}
+{% block panel %}
+<div class="grid g3 mb">
+  <div class="stat"><div class="k">Aktif API anahtarı</div><div class="v">{{ stats.keys }}</div></div>
+  <div class="stat"><div class="k">Otomatik onaylanan yükleme</div><div class="v">{{ stats.auto_deposits }}</div></div>
+  <div class="stat"><div class="k">Son API kullanımı</div><div class="v" style="font-size:1.05rem">{{ stats.last_api_use|dt if stats.last_api_use else '-' }}</div></div>
+</div>
+
+<div class="card doc mb">
+  <h3 class="mt0">Ödeme bildirimi (webhook)</h3>
+  <p class="muted">Bir ödeme sağlayıcısı veya kendi ödeme servisin, başarılı ödemeyi bu adrese bildirdiğinde bekleyen bakiye yükleme talebi otomatik onaylanır ve bakiye eklenir. Kullanıcı önce sitede yükleme talebi oluşturur; talebin numarası <code class="inline">deposit_id</code> olarak gönderilir.</p>
+  <p>Durum: {% if secret_set %}<span class="badge b-ok">Gizli anahtar tanımlı</span> <span class="mono muted">{{ secret_hint }}</span>{% else %}<span class="badge b-bad">PAYMENT_WEBHOOK_SECRET tanımlı değil, webhook kapalı</span>{% endif %}</p>
+  <p>Adres: <code class="inline">POST {{ base }}/api/webhook/odeme</code></p>
+  <p class="muted">Gizli anahtar <code class="inline">.env</code> dosyasındaki <code class="inline">PAYMENT_WEBHOOK_SECRET</code> değeridir; buradan değiştirilemez ve sayfada tam olarak gösterilmez. İmza, ham istek gövdesinin HMAC-SHA256 özetidir (onaltılık) ve <code class="inline">X-Signature</code> başlığıyla gönderilir.</p>
+<pre>body='{"deposit_id": 12, "amount": "250.00", "status": "success", "transaction_id": "TX-98765"}'
+sig=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$PAYMENT_WEBHOOK_SECRET" | awk '{print $2}')
+
+curl -X POST {{ base }}/api/webhook/odeme \
+  -H "Content-Type: application/json" \
+  -H "X-Signature: $sig" \
+  -d "$body"</pre>
+  <ul class="muted">
+    <li><code class="inline">status</code>: <code class="inline">success</code> talebi onaylar, <code class="inline">failed</code> reddeder.</li>
+    <li><code class="inline">amount</code> talep edilen tutarla birebir eşleşmelidir; eşleşmezse istek reddedilir.</li>
+    <li><code class="inline">transaction_id</code> benzersizdir; aynı bildirim tekrar gelirse ikinci kez bakiye eklenmez.</li>
+  </ul>
+</div>
+
+<div class="card doc mb">
+  <h3 class="mt0">Satıcı API'si</h3>
+  <p class="muted">Satıcılar kendi panellerinden anahtar oluşturur ve stok ile ilan durumunu otomatik yönetir. Tüm uçlar <code class="inline">Authorization: Bearer &lt;anahtar&gt;</code> ister; dakikada 120 istek sınırı vardır.</p>
+  <ul class="muted">
+    <li><code class="inline">GET {{ base }}/api/v1/me</code> profil, bakiye ve satış özeti</li>
+    <li><code class="inline">GET {{ base }}/api/v1/listings</code> ilanlar</li>
+    <li><code class="inline">POST {{ base }}/api/v1/listings/&lt;id&gt;/stock</code> stoğa kod ekler (<code class="inline">{"codes": [...]}</code>)</li>
+    <li><code class="inline">POST {{ base }}/api/v1/listings/&lt;id&gt;/status</code> ilanı yayına alır veya duraklatır</li>
+    <li><code class="inline">GET {{ base }}/api/v1/orders</code> satışlar ve komisyon bilgisi</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3 class="mt0">Tüm API anahtarları</h3>
+  {% if keys %}<div class="table-wrap"><table>
+    <tr><th>Ad</th><th>Sahip</th><th>Anahtar</th><th>Son kullanım</th><th>Oluşturma</th><th>Durum</th><th></th></tr>
+    {% for k in keys %}<tr>
+      <td>{{ k.name }}</td><td><a href="{{ url_for('admin.user', uid=k.user_id) }}">{{ k.username }}</a></td><td class="mono">{{ k.key_prefix }}...</td>
+      <td class="nowrap">{{ k.last_used_at|dt if k.last_used_at else '-' }}</td><td class="nowrap">{{ k.created_at|dt }}</td>
+      <td><span class="badge b-{{ 'ok' if k.is_active else 'bad' }}">{{ 'Aktif' if k.is_active else 'İptal' }}</span></td>
+      <td class="actions">{% if k.is_active %}<form method="post" action="{{ url_for('admin.api_key_revoke', kid=k.id) }}" data-confirm="Bu anahtar iptal edilsin mi?">{{ csrf_field() }}<button class="btn btn-danger btn-sm" type="submit">İptal et</button></form>{% endif %}</td>
+    </tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Henüz API anahtarı oluşturulmadı') }}{% endif %}
+</div>
+{% endblock %}

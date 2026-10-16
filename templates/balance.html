@@ -1,0 +1,95 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import badge, empty, ic with context %}
+{% block title %}Bakiye Yükle{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Bakiye yükle</h1><span class="chip">Bakiyen: {{ me.balance|money }}</span></div>
+
+{% if pay_links %}
+<div class="card mb card-method">
+  <div class="card-h"><h2>Ödeme linkiyle yükle</h2></div>
+  <p class="muted">Bir tutar seç ve <b>Öde</b> düğmesine bas. Ödeme sayfası yeni sekmede açılır; bu sayfada ödemenin durumunu görürsün. Ödemen kontrol edilince tutar bakiyene eklenir.</p>
+  <div class="grid g3">
+    {% for p in pay_links %}
+    <form class="card flat paylink" method="post" action="{{ url_for('paylink.start', lid=p.id) }}" data-paylink data-open="{{ p.url }}">
+      {{ csrf_field() }}
+      <div class="muted small">{{ p.title }}</div>
+      <div class="stat-v" style="font-size:1.6rem;font-weight:800;margin:6px 0">{{ p.amount|money }}</div>
+      {% if p.description %}<p class="muted small">{{ p.description }}</p>{% endif %}
+      <button class="btn" type="submit">Öde</button>
+      <div class="notice bad small mt" data-plerr hidden></div>
+    </form>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not methods %}
+{% if not pay_links %}<div class="notice warn">Şu anda aktif bir yükleme yöntemi yok. Lütfen daha sonra tekrar dene ya da <a href="{{ url_for('ticket_new') }}">destek talebi</a> oluştur.</div>{% endif %}
+{% else %}
+<form method="post" action="{{ url_for('balance') }}" class="pm-form mb" id="depform" data-min-default="{{ min_deposit }}">
+  {{ csrf_field() }}
+  <div class="card">
+    <div class="card-h"><h2>1. Yükleme yöntemini seç</h2><span class="muted small">{{ methods|length }} yöntem</span></div>
+    <div class="pm-grid" role="radiogroup" aria-label="Yükleme yöntemi">
+      {% for m in methods %}{% set mn = [m.min_amount, min_deposit]|max %}
+      <label class="pm-card{{ ' on' if m.id == pre_method }}" style="--c:{{ m.color or '#7c5cff' }}">
+        <input type="radio" name="method_id" value="{{ m.id }}" {{ 'checked' if m.id == pre_method }} required
+          data-min="{{ mn }}" data-max="{{ m.max_amount }}" data-bonus="{{ m.bonus_percent }}">
+        <span class="pm-ico">{{ ic(pm_clean_icon(m.icon, m.kind)) }}</span>
+        <span class="pm-body">
+          <b>{{ m.name }}</b>
+          <small>{% if m.eta %}{{ m.eta }} &middot; {% endif %}Min. {{ mn|money }}{% if m.max_amount %} &middot; Maks. {{ m.max_amount|money }}{% endif %}</small>
+        </span>
+        {% if m.bonus_percent %}<span class="pm-tag bonus">%{{ '%g'|format(m.bonus_percent) }} bonus</span>{% elif m.badge %}<span class="pm-tag">{{ m.badge }}</span>{% endif %}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card mt">
+    <div class="card-h"><h2>2. Ödeme bilgileri</h2><span class="muted small">Ödemeyi bu bilgilere gönder</span></div>
+    {% for m in methods %}
+    <div class="pm-detail" data-pm="{{ m.id }}" {{ 'hidden' if m.id != pre_method }}>
+      <div class="pm-lines" id="pm{{ m.id }}">
+        {% for line in m.details.split('\n') if line.strip() %}{% set parts = line.split(':', 1) %}
+        <div class="pm-line">
+          {% if parts|length > 1 and parts[1].strip() %}<span class="pm-k">{{ parts[0] }}</span><code class="pm-v">{{ parts[1].strip() }}</code>
+          <button type="button" class="btn btn-ghost btn-sm" data-copy="{{ parts[1].strip() }}">{{ ic('copy') }}Kopyala</button>
+          {% else %}<span class="pm-v plain">{{ line }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="row mt"><button type="button" class="btn btn-ghost btn-sm" data-copy="#pm{{ m.id }}">{{ ic('copy') }}Tüm bilgileri kopyala</button></div>
+      {% if m.instructions %}<div class="pm-note">{{ ic('info') }}<span>{{ m.instructions }}</span></div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card mt">
+    <div class="card-h"><h2>3. Ödeme bildirimi</h2></div>
+    <p class="muted">Ödemeyi gönderdikten sonra tutarı ve dekont bilgisini yaz. Kontrol edilince tutar bakiyene eklenir.</p>
+    <div class="form-row">
+      <div class="field"><label for="amount">Gönderdiğin tutar (TL)</label><input type="text" inputmode="decimal" id="amount" name="amount" required placeholder="250,00" value="{{ pre_amount|plain if pre_amount }}">
+        <div class="quick">{% for v in (50, 100, 250, 500, 1000) %}<button type="button" data-fill="{{ v }}" data-target="#amount">{{ v }} TL</button>{% endfor %}</div></div>
+      <div class="field"><label for="reference">Dekont / işlem no veya gönderen adı</label><input type="text" id="reference" name="reference" required maxlength="120"></div>
+    </div>
+    <div class="field"><label for="note">Not (isteğe bağlı)</label><input type="text" id="note" name="note" maxlength="300"></div>
+    <div class="pm-sum" id="pm-sum" hidden>
+      <div><span>Gönderilecek</span><b id="pm-s-amt">-</b></div>
+      <div class="bonus-row" hidden><span>Yükleme bonusu</span><b id="pm-s-bonus">-</b></div>
+      <div class="tot"><span>Bakiyene eklenecek</span><b id="pm-s-tot">-</b></div>
+    </div>
+    <div class="pm-limit small muted" id="pm-limit"></div>
+    <button class="btn" type="submit">{{ ic('send') }}Bildirimi gönder</button>
+  </div>
+</form>
+{% endif %}
+
+<div class="card">
+  <h2>Yükleme geçmişi</h2>
+  {% if history %}<div class="table-wrap"><table>
+    <tr><th>No</th><th>Tarih</th><th>Yöntem</th><th class="right">Tutar</th><th>Durum</th><th>Not</th></tr>
+    {% for d in history %}<tr><td>#{{ d.id }}</td><td>{{ d.created_at|dt }}</td><td>{{ d.method_name }}</td><td class="right nowrap {{ 'pos' if d.status == 'approved' }}">{{ d.amount|smoney if d.status == 'approved' else d.amount|money }}</td><td>{{ badge(d.status) }}</td><td class="muted small">{{ d.admin_note }}{% if d.link_id or d.link_url %} <a href="{{ url_for('paylink.wait', did=d.id) }}">Durum</a>{% endif %}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Henüz yükleme bildirimin yok') }}{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block title %}Shopier ödeme sayfasına yönlendiriliyor{% endblock %}
+{% block content %}
+<div class="container section" style="max-width:520px">
+  <div class="card cp-state">
+    <div class="cp-spin"></div>
+    <h2>Shopier ödeme sayfasına yönlendiriliyorsun</h2>
+    <p class="muted">Ödemeni Shopier üzerinden tamamlayacaksın. Ödeme bitince otomatik olarak buraya döneceksin.</p>
+    <div class="fee-box">
+      <div class="fee-row"><span>Bakiyene eklenecek</span><b>{{ qt.credit|money }}</b></div>
+      {% if qt.fee %}<div class="fee-row"><span>Shopier komisyonu</span><b>{{ qt.fee|money }}</b></div>{% endif %}
+      <div class="fee-row fee-total"><span>Ödeyeceğin toplam</span><b>{{ qt.charge|money }}</b></div>
+    </div>
+    <form method="post" action="{{ action }}" data-autosubmit>
+      {% for k, v in fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      <noscript><p class="muted">Otomatik yönlendirme çalışmadı.</p></noscript>
+      <button class="btn btn-block" type="submit">Yönlendirme başlamazsa buraya tıkla</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

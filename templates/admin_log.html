@@ -1,0 +1,12 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}Yönetici Günlüğü{% endblock %}
+{% block heading %}Yönetici günlüğü{% endblock %}
+{% block panel %}
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>İşlem</th><th>Ayrıntı</th><th>IP</th></tr>
+  {% for l in page.rows %}<tr><td>#{{ l.id }}</td><td class="nowrap">{{ l.created_at|dt }}</td><td><b>{{ l.action }}</b></td><td>{{ l.detail }}</td><td class="log-ip">{{ l.ip }}</td></tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Kayıt yok') }}</div>{% endif %}
+{% endblock %}

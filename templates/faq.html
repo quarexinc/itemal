@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Nasıl Çalışır{% endblock %}
+{% block content %}
+<div class="container section doc" style="max-width:860px">
+  <h1>Nasıl çalışır ve kullanım koşulları</h1>
+  <div class="card mb">
+    <h3 class="mt0">Satın alma</h3>
+    <p class="muted">Bakiye yükle, ilan seç, satın al. Kodlar ödeme anında sipariş sayfanda görünür. Teslim edilen dijital kodlar kullanıldığı için genel kural olarak iade edilmez; kodun çalışmaması gibi sorunlarda destek talebi aç. Kupon kodun varsa satın alma ekranında uygulayabilirsin.</p>
+    <h3>Satıcı olmak</h3>
+    <p class="muted">Satıcı başvurusu yap. Onaylanınca ilan verebilir, stok yükleyebilir ve satış raporlarını görebilirsin.</p>
+    <h3>Emanet</h3>
+    <p class="muted">Ödemen satıcıya hemen geçmez. Kodları kontrol edip siparişi onayladığında tutar satıcıya aktarılır. Onay vermezsen belirlenen süre sonunda otomatik aktarılır; sorun varsa aynı sayfadan bildirim yapabilirsin.</p>
+    <h3>Komisyon</h3>
+    <p class="muted">Satıcılardan satış başına komisyon alınır (genel oran {{ cfg.commission_percent }}%; kategoriye veya satıcıya özel oran uygulanabilir). Alıcıdan ek ücret alınmaz. Oranı ilan verirken net kazancınla birlikte görürsün.</p>
+    <h3>Para çekme</h3>
+    <p class="muted">{% if cfg.withdraw_only_earnings == '1' %}Yalnızca satış kazançları çekilebilir; yüklenen bakiye alışveriş içindir.{% endif %} Çekimlerde %{{ cfg.withdraw_fee_percent }} işlem kesintisi uygulanır, minimum tutar {{ cfg.min_withdraw }} TL'dir.</p>
+  </div>
+  <div class="card mb">
+    <h3 class="mt0">Güvenlik kuralları</h3>
+    <p class="muted">Ödemeyi ve teslimatı platform dışına taşımayın; platform dışı anlaşmalarda koruma sağlanamaz. Sahte veya daha önce kullanılmış kod satmak hesabın kalıcı olarak kapatılmasına yol açar.</p>
+    <p class="muted"><b>Mesajlaşma:</b> Alıcı-satıcı yazışmaları ve destek talepleri, dolandırıcılığı önlemek ve uyuşmazlıkları çözmek amacıyla yönetim ekibi tarafından görüntülenebilir. Şifre, banka kartı bilgisi veya kimlik numarası paylaşmayın.</p>
+  </div>
+  <div class="card faq">
+    <h3 class="mt0">Sıkça sorulan sorular</h3>
+    <details><summary>Kodum çalışmadı, ne yapmalıyım?</summary><p>Sipariş sayfasından satıcıya mesaj yaz; çözülmezse Destek bölümünden sipariş numaranla talep aç.</p></details>
+    <details><summary>Bakiyem ne zaman yüklenir?</summary><p>Yükleme bildirimin kontrol edildikten sonra bakiyene eklenir. Süre yöntemine göre değişir.</p></details>
+    <details><summary>Rozetler ne anlama geliyor?</summary><p><b>Kimliği Doğrulandı:</b> ödeme öncesi kimlik doğrulaması tamamlandı. <b>Onaylı Satıcı:</b> satıcı başvurusu onaylandı. <b>Güvenilir Satıcı:</b> yüksek satış adedi ve yüksek müşteri puanı. <b>Mağaza Üyesi:</b> kurumsal mağaza üyeliği. <b>Yıldız Satıcı:</b> yönetim tarafından seçilen üstün performans.</p></details>
+    <details><summary>Kupon nasıl kullanılır?</summary><p>İlan sayfasında satın alma kutusundaki kupon alanına kodu yazıp Uygula'ya bas. İndirim toplam tutardan düşer; kupon kategori, minimum tutar ve kullanım sınırı gibi koşullara bağlı olabilir.</p></details>
+    <details><summary>Destek talebim ne zaman yanıtlanır?</summary><p>Talepler sıraya alınır; ödeme ve şikayet konuları önceliklidir. Yanıt geldiğinde bildirim alırsın.</p></details>
+  </div>
+</div>
+{% endblock %}

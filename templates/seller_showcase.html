@@ -1,0 +1,90 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block title %}Vitrin ayarları{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Vitrin ayarları</h1><a class="btn btn-ghost btn-sm" href="{{ path }}" target="_blank" rel="noopener">{{ ic('external') }}Mağazamı gör</a></div>
+
+<div class="card mb">
+  <h3 class="mt0">Mağaza adresin</h3>
+  <p class="muted small">Müşterilerine kolay bir adres ver: <b>{{ host }}/magazaadin</b>. Adresi sosyal medya, Discord ve kartvizitlerde paylaşabilirsin.</p>
+  <div class="slug-box">
+    <div class="slug-link"><span class="muted">{{ host }}/</span><b>{{ u.store_slug or u.username }}</b></div>
+    <button type="button" class="btn btn-ghost btn-sm" data-copy="{{ link }}">{{ ic('copy') }}Kopyala</button>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('seller.showcase_qr') }}" download="magaza-qr.svg">{{ ic('download') }}QR kod</a>
+  </div>
+  <form method="post" action="{{ url_for('seller.showcase') }}" class="row mt"{% if slug_fee %} data-fee-field="slug" data-fee-confirm="Mağaza adresini değiştirmek {{ slug_fee|money }} tutarında ücretlidir ve bakiyenden düşülür. Onaylıyor musun?"{% endif %}>
+    {{ csrf_field() }}<input type="hidden" name="action" value="slug">
+    <div class="field slug-field" style="flex:1;min-width:240px;margin:0"><label for="slug">Yeni adres</label>
+      <div class="input-btn"><span class="pre-addon">{{ host }}/</span><input type="text" id="slug" name="slug" value="{{ u.store_slug }}" placeholder="{{ u.username|lower }}" maxlength="30" pattern="[A-Za-z0-9_\-]{3,30}" autocomplete="off" {{ 'disabled' if cool }}></div>
+    </div>
+    <button class="btn" type="submit" {{ 'disabled' if cool }}>Kaydet</button>
+  </form>
+  {% if slug_fee %}<p class="fee-note mt">Adres değişikliği <b>{{ slug_fee|money }}</b> ücretlidir ve bakiyenden düşülür (bakiyen: {{ balance|money }}). İlk belirleme ücretsizdi.</p>
+  {% else %}<p class="muted small mt">İlk adres belirleme ücretsizdir; sonraki değişiklikler {{ fee_slug_amount|money }} ücretlidir.</p>{% endif %}
+  {% if cool %}<p class="muted small mt">Adresi en sık 7 günde bir değiştirebilirsin. {{ cool|int }} gün sonra tekrar değiştirebilirsin.</p>
+  {% else %}<p class="muted small mt">3-30 karakter; harf, rakam, tire ve alt çizgi. Boş bırakırsan kullanıcı adın kullanılır. Eski adresin 30 gün boyunca yeni adresine yönlenir.</p>{% endif %}
+  <div class="grid g3 mt">
+    <div class="stat"><div class="k">Mağaza ziyareti</div><div class="v">{{ u.store_views }}</div><div class="s">Tekil ziyaretçi sayısı</div></div>
+    <div class="stat"><div class="k">Durum</div><div class="v" style="font-size:1.1rem">{{ 'Tatilde' if vac else 'Siparişe açık' }}</div></div>
+    <div class="stat"><div class="k">Tema</div><div class="v" style="font-size:1.1rem">{{ themes[u.store_theme][0] if u.store_theme in themes else 'Mor (varsayılan)' }}</div></div>
+  </div>
+</div>
+
+<div class="card mb">
+  <h3 class="mt0">Görünüm ve bağlantılar</h3>
+  <form method="post" action="{{ url_for('seller.showcase') }}">
+    {{ csrf_field() }}<input type="hidden" name="action" value="look">
+    <div class="field"><label>Mağaza tema rengi</label>
+      <div class="theme-sws">
+        {% for key, t in themes.items() %}{% set lock = (key not in free_themes) and not themes_open %}<label class="theme-sw{{ ' locked' if lock }}" title="{{ t[0] }}{{ ' (Premium Vitrin gerekir)' if lock }}"><input type="radio" name="theme" value="{{ key }}" {{ 'checked' if (u.store_theme or '') == key }} {{ 'disabled' if lock }}><i style="background:{{ t[1] }}"></i><span>{{ t[0] }}{% if lock %} &middot; kilitli{% endif %}</span></label>{% endfor %}
+      </div>
+      {% if not themes_open %}<small class="muted">Kilitli renkler için <a href="{{ url_for('seller.packages') }}">Premium Vitrin</a> ya da Elmas paketi gerekir.</small>{% endif %}
+    </div>
+    <div class="field"><label for="notice">Mağaza duyurusu</label><input type="text" id="notice" name="notice" value="{{ u.store_notice }}" maxlength="140" placeholder="Örnek: Hafta sonu tüm ilanlarda stok yenilendi"><small class="muted">Mağaza sayfanın en üstünde bir çubukta görünür. Boş bırakırsan gösterilmez.</small></div>
+    <div class="grid g2">
+      <div class="field"><label for="discord">Discord sunucusu</label><input type="text" id="discord" name="discord" value="{{ u.store_discord }}" maxlength="80" placeholder="discord.gg/davetkodu"></div>
+      <div class="field"><label for="telegram">Telegram</label><input type="text" id="telegram" name="telegram" value="{{ u.store_telegram }}" maxlength="80" placeholder="@kullaniciadi"></div>
+      <div class="field"><label for="instagram">Instagram</label><input type="text" id="instagram" name="instagram" value="{{ u.store_instagram }}" maxlength="80" placeholder="@kullaniciadi"></div>
+      <div class="field"><label for="web">Web sitesi</label><input type="text" id="web" name="web" value="{{ u.store_web }}" maxlength="120" placeholder="https://siteadi.com"></div>
+    </div>
+    <button class="btn" type="submit">Kaydet</button>
+  </form>
+</div>
+
+<div class="grid g2 mb">
+  <div class="card">
+    <h3 class="mt0">Tatil modu</h3>
+    {% if vac %}
+      <div class="notice warn">Mağazan tatilde{% if u.vacation_until %}: <b>{{ u.vacation_until|dt }}</b> tarihine kadar{% endif %}. Yeni sipariş alınmıyor, ilanların görünmeye devam ediyor.</div>
+      <form method="post" action="{{ url_for('seller.showcase') }}">{{ csrf_field() }}<input type="hidden" name="action" value="vacation_off"><button class="btn" type="submit">Tatili bitir</button></form>
+    {% else %}
+      <p class="muted small">Müsait değilken siparişleri geçici olarak durdur. Alıcılar mağaza ve ilan sayfanda bilgilendirilir; ilanların silinmez ve sıralaman bozulmaz.</p>
+      <form method="post" action="{{ url_for('seller.showcase') }}">
+        {{ csrf_field() }}<input type="hidden" name="action" value="vacation_on">
+        <div class="field"><label for="until">Bitiş tarihi (isteğe bağlı)</label><input type="date" id="until" name="until"><small class="muted">En fazla 60 gün. Boş bırakırsan sen kapatana kadar sürer.</small></div>
+        <button class="btn btn-line" type="submit" data-confirm="Mağazan tatil moduna alınsın mı? Yeni sipariş alınmaz.">Tatil moduna al</button>
+      </form>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h3 class="mt0">Otomatik karşılama mesajı</h3>
+    <p class="muted small">Bir alıcı sana ilk kez mesaj yazdığında bu metin otomatik gönderilir. Teslimat süresi, çalışma saatleri ya da sık sorulan sorular için ideal.</p>
+    <form method="post" action="{{ url_for('seller.showcase') }}">
+      {{ csrf_field() }}<input type="hidden" name="action" value="reply">
+      <div class="field"><textarea name="auto_reply" maxlength="400" style="min-height:110px" placeholder="Merhaba, mağazamıza hoş geldin. Kodlar ödeme anında teslim edilir; sorunu buraya yazabilirsin.">{{ u.auto_reply }}</textarea></div>
+      <button class="btn" type="submit">Kaydet</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h3 class="mt0">Aylık kazanç hedefi</h3>
+  <p class="muted small">Hedefini yaz, genel bakış sayfasında bu ayki ilerlemeni göster. Hedef yalnızca sana görünür.</p>
+  {% if goal %}<div class="goal-bar mb"><div class="meter"><i style="width:{{ goal.pct }}%"></i></div><div class="spread small"><span>{{ goal.got|money }} / {{ goal.goal|money }}</span><b>%{{ goal.pct }}</b></div></div>{% endif %}
+  <form method="post" action="{{ url_for('seller.showcase') }}" class="row">
+    {{ csrf_field() }}<input type="hidden" name="action" value="goal">
+    <div class="field" style="margin:0;flex:1;min-width:200px"><label for="goal">Hedef (TL, net kazanç)</label><input type="text" id="goal" name="goal" inputmode="decimal" value="{{ (u.sales_goal / 100)|int if u.sales_goal else '' }}" placeholder="Örnek: 5000"></div>
+    <button class="btn" type="submit">Kaydet</button>
+  </form>
+</div>
+{% endblock %}

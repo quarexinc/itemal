@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Altın mağaza">
+  <defs>
+    <linearGradient id="gg" x1="4" y1="1" x2="20" y2="23" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe27a"/>
+      <stop offset="0.5" stop-color="#f7b500"/>
+      <stop offset="1" stop-color="#d98a00"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 1.6l8.1 2.9v6.3c0 5.2-3.4 9.1-8.1 11.6C7.3 19.9 3.9 16 3.9 10.8V4.5z" fill="url(#gg)" stroke="#b86e00" stroke-width="0.6" stroke-linejoin="round"/>
+  <path d="M12.00,6.60 L13.26,9.96 L16.85,10.12 L14.04,12.36 L15.00,15.83 L12.00,13.85 L9.00,15.83 L9.96,12.36 L7.15,10.12 L10.74,9.96Z" fill="#fff8dc" stroke="#fff8dc" stroke-width="0.5" stroke-linejoin="round"/>
+</svg>

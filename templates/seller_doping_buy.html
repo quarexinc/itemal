@@ -1,0 +1,30 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import ic with context %}
+{% from "_doping.html" import doping_picker with context %}
+{% block title %}Doping al{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Doping al</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('seller.doping') }}">Doping özeti</a></div>
+<div class="card mb">
+  <div class="row" style="flex-wrap:nowrap">
+    <div class="thumb">{% if item.cover %}<img src="{{ cover_url(item.cover, true) }}" alt="">{% endif %}</div>
+    <div><a href="{{ url_for('listing_detail', lid=item.id) }}"><b>{{ item.title }}</b></a>
+      <div class="muted small">İlan #{{ item.id }} &middot; {{ item.price|money }}</div>
+      {% if active_dp %}<div class="dp-tags mt">{% for d in active_dp %}<span class="dp-tag dp-{{ d.kind }}">{{ ic('flame') }}{{ d.label }} <small>bitiş {{ d.ends_at|dt }}</small></span>{% endfor %}</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% if blocked %}
+<div class="notice warn">{{ blocked }}</div>
+<a class="btn btn-ghost" href="{{ url_for('seller.listings') }}">İlanlarıma dön</a>
+{% else %}
+<div class="card">
+  <form method="post" action="{{ url_for('seller.doping_buy', lid=item.id) }}">
+    {{ csrf_field() }}
+    {{ doping_picker(doping, dsel, balance, dkey) }}
+    {% if active_dp %}<div class="hint mb">Süresi devam eden bir dopingi yeniden seçersen, yeni süre mevcut bitişin üzerine eklenir.</div>{% endif %}
+    <button class="btn" type="submit">{{ ic('flame') }} Satın al</button>
+    <a class="btn btn-ghost" href="{{ url_for('seller.doping') }}">Vazgeç</a>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

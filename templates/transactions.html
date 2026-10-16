@@ -1,0 +1,12 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}Hesap Hareketleri{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Hesap hareketleri</h1><span class="chip">Bakiye: {{ me.balance|money }}</span></div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>Tarih</th><th>Tür</th><th>Açıklama</th><th class="right">Tutar</th><th class="right">Bakiye</th></tr>
+  {% for t in page.rows %}<tr><td class="nowrap">{{ t.created_at|dt }}</td><td>{{ t.kind|kindlabel }}</td><td class="muted">{{ t.description }}</td><td class="right nowrap {{ 'pos' if t.amount > 0 else 'neg' }}">{{ t.amount|smoney }}</td><td class="right nowrap">{{ t.balance_after|money }}</td></tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Henüz hareket yok') }}</div>{% endif %}
+{% endblock %}

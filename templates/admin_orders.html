@@ -1,0 +1,25 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}Siparişler{% endblock %}
+{% block heading %}Siparişler{% endblock %}
+{% block panel %}
+<form class="filters" method="get" action="{{ url_for('admin.orders') }}">
+  <div class="field grow"><label for="q">Ara</label><input type="search" id="q" name="q" value="{{ text }}" placeholder="Sipariş no, alıcı, satıcı veya ilan"></div>
+  <div class="field"><button class="btn" type="submit">Ara</button></div>
+</form>
+<div class="grid g3 mb">
+  <div class="stat"><div class="k">Adet</div><div class="v">{{ sums.qty }}</div></div>
+  <div class="stat"><div class="k">Ciro</div><div class="v">{{ sums.gross|money }}</div></div>
+  <div class="stat good"><div class="k">Komisyon</div><div class="v">{{ sums.fee|money }}</div></div>
+</div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>İlan</th><th>Alıcı</th><th>Satıcı</th><th class="right">Adet</th><th class="right">Toplam</th><th class="right">Komisyon</th><th>Emanet</th></tr>
+  {% for o in page.rows %}<tr><td>#{{ o.id }}</td><td class="nowrap">{{ o.created_at|dt }}</td><td>{{ o.listing_title[:40] }}</td><td>{{ o.buyer_name }}</td><td>{{ o.seller_name }}{{ pkg_marks(o.seller_id) }}</td><td class="right">{{ o.quantity }}</td><td class="right nowrap">{{ o.total|money }}</td><td class="right nowrap">{{ o.commission|money }} <span class="muted small">(%{{ o.commission_rate }})</span></td>
+    <td><span class="badge b-{{ o.escrow_status|sclass }}">{{ o.escrow_status|slabel }}</span>
+      {% if o.escrow_status in ('held', 'disputed') %}<form method="post" action="{{ url_for('admin.escrow_action', oid=o.id) }}" class="mt row">{{ csrf_field() }}
+        <button class="btn btn-ok btn-sm" name="action" value="release" type="submit" data-confirm="Tutar satıcıya aktarılsın mı?">Aktar</button>
+        <button class="btn btn-danger btn-sm" name="action" value="refund" type="submit" data-confirm="Tutar alıcıya iade edilsin mi?">İade</button></form>{% endif %}</td></tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Sipariş bulunamadı') }}</div>{% endif %}
+{% endblock %}

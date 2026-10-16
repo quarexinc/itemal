@@ -1,0 +1,56 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import empty %}
+{% block title %}API Erişimi{% endblock %}
+{% block panel %}
+{% set base = request.host_url.rstrip('/') %}
+<div class="page-h"><h1>API erişimi</h1></div>
+
+{% if new_key %}
+<div class="card mb">
+  <h3 class="mt0">Yeni anahtarın oluşturuldu</h3>
+  <p class="muted">Bu anahtarı yalnızca <b>şimdi</b> görebilirsin. Güvenli bir yere kaydet; kaybedersen iptal edip yenisini oluşturman gerekir.</p>
+  <div class="keybox mono" id="newkey">{{ new_key }}</div>
+  <div class="row mt"><button type="button" class="btn btn-sm" data-copy="#newkey">Anahtarı kopyala</button></div>
+</div>
+{% endif %}
+
+<div class="card mb">
+  <h3 class="mt0">API anahtarların</h3>
+  {% if keys %}<div class="table-wrap"><table>
+    <tr><th>Ad</th><th>Anahtar</th><th>Son kullanım</th><th>Oluşturma</th><th>Durum</th><th></th></tr>
+    {% for k in keys %}<tr><td>{{ k.name }}</td><td class="mono">{{ k.key_prefix }}...</td><td class="nowrap">{{ k.last_used_at|dt if k.last_used_at else '-' }}</td><td class="nowrap">{{ k.created_at|dt }}</td>
+      <td><span class="badge b-{{ 'ok' if k.is_active else 'bad' }}">{{ 'Aktif' if k.is_active else 'İptal' }}</span></td>
+      <td class="actions">{% if k.is_active %}<form method="post" action="{{ url_for('seller.api_keys') }}" data-confirm="Bu anahtar iptal edilsin mi? Bunu kullanan tüm araçlar çalışmayı durdurur.">{{ csrf_field() }}<input type="hidden" name="action" value="revoke"><input type="hidden" name="id" value="{{ k.id }}"><button class="btn btn-danger btn-sm" type="submit">İptal et</button></form>{% endif %}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Henüz API anahtarın yok') }}{% endif %}
+  <form method="post" action="{{ url_for('seller.api_keys') }}" class="row mt">
+    {{ csrf_field() }}<input type="hidden" name="action" value="create">
+    <div class="field" style="flex:1;min-width:220px;margin:0"><label for="name">Yeni anahtar adı</label><input type="text" id="name" name="name" maxlength="40" required placeholder="Örn. Stok botu"></div>
+    <button class="btn" type="submit">Anahtar Oluştur</button>
+  </form>
+</div>
+
+<div class="card doc">
+  <h3 class="mt0">Kullanım</h3>
+  <p class="muted">Tüm isteklerde <code class="inline">Authorization: Bearer &lt;anahtar&gt;</code> başlığı gerekir. Dakikada en fazla 120 istek gönderebilirsin. Yanıtlar JSON'dur.</p>
+  <h3>Profil ve bakiye</h3>
+<pre>curl {{ base }}/api/v1/me \
+  -H "Authorization: Bearer itm_..."</pre>
+  <h3>İlanlarını listele</h3>
+<pre>curl {{ base }}/api/v1/listings \
+  -H "Authorization: Bearer itm_..."</pre>
+  <h3>Stoğa kod ekle</h3>
+<pre>curl -X POST {{ base }}/api/v1/listings/12/stock \
+  -H "Authorization: Bearer itm_..." \
+  -H "Content-Type: application/json" \
+  -d '{"codes": ["ABCD-1234", "EFGH-5678"]}'</pre>
+  <h3>İlanı duraklat / yayınla</h3>
+<pre>curl -X POST {{ base }}/api/v1/listings/12/status \
+  -H "Authorization: Bearer itm_..." \
+  -H "Content-Type: application/json" \
+  -d '{"status": "paused"}'</pre>
+  <h3>Satışları çek</h3>
+<pre>curl "{{ base }}/api/v1/orders?after_id=0&amp;limit=50" \
+  -H "Authorization: Bearer itm_..."</pre>
+  <p class="muted small">Satış yanıtlarında alıcıya teslim edilen kodlar yer almaz.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import bars, empty, ic, spark with context %}
+{% block heading %}Raporlar{% endblock %}
+{% block panel %}
+<div class="page-h">
+  <div class="seg">{% for d, label in ranges.items() %}<a class="{{ 'on' if d == days }}" href="{{ url_for('admin.reports', gun=d) }}">{{ label }}</a>{% endfor %}</div>
+  <div class="row">
+    <span class="small muted">Dışa aktar (CSV):</span>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.export', what='siparisler') }}">Siparişler</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.export', what='kullanicilar') }}">Kullanıcılar</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.export', what='yuklemeler') }}">Yüklemeler</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.export', what='cekimler') }}">Çekimler</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.export', what='ilanlar') }}">İlanlar</a>
+  </div>
+</div>
+
+<div class="kpis mb">
+  <div class="kpi"><div class="k">{{ ic('chart') }}Ciro</div><div class="v">{{ kpi.gmv|money }}</div><div class="s">{{ kpi.orders }} sipariş &middot; {{ kpi.qty }} adet</div>{{ spark(chart|map(attribute='value')|list) }}</div>
+  <div class="kpi"><div class="k">{{ ic('percent') }}Komisyon</div><div class="v ok">{{ kpi.fee|money }}</div><div class="s">Ort. sepet {{ (kpi.gmv / kpi.orders)|int|money if kpi.orders else '-' }}</div></div>
+  <div class="kpi"><div class="k">{{ ic('ticket') }}Kupon maliyeti</div><div class="v warn">{{ kpi.discount|money }}</div><div class="s">Net komisyon {{ (kpi.fee - kpi.discount)|money }} &middot; Doping geliri {{ mi.doping|money }}</div></div>
+  <div class="kpi"><div class="k">{{ ic('users') }}Alıcı / yeni üye</div><div class="v">{{ kpi.buyers }} / {{ mi.new_users }}</div><div class="s">{{ mi.new_sellers }} yeni satıcı</div></div>
+  <div class="kpi"><div class="k">{{ ic('download') }}Yüklemeler</div><div class="v">{{ mi.deposits|money }}</div><div class="s">Ödenen çekim {{ mi.payouts|money }}</div></div>
+</div>
+
+<div class="two-col mb">
+  <div class="card"><div class="card-h"><h3>Günlük ciro</h3><span class="small muted">Son {{ span }} gün</span></div>{{ bars(chart, true) }}</div>
+  <div class="card"><div class="card-h"><h3>Günlük sipariş</h3><span class="small muted">Son {{ span }} gün</span></div>{{ bars(chart_orders) }}</div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <div class="card-h"><h3>Kategoriler</h3></div>
+    {% if by_cat %}{% set peak = by_cat[0].gmv or 1 %}
+    {% for c in by_cat %}<div class="hbar"><span>{{ c.name }}</span><div class="meter"><i style="width:{{ (c.gmv * 100 / peak)|round|int }}%;background:{{ c.color or '#7c5cff' }}"></i></div><b>{{ c.gmv|money }}</b></div>{% endfor %}
+    {% else %}{{ empty('Bu aralıkta satış yok') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Ödeme yöntemleri (yüklemeler)</h3></div>
+    {% if by_method %}<div class="table-wrap"><table>
+      <tr><th>Yöntem</th><th class="right">Adet</th><th class="right">Tutar</th></tr>
+      {% for m in by_method %}<tr><td>{{ m.name }}</td><td class="right">{{ m.n }}</td><td class="right nowrap">{{ m.total|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Bu aralıkta yükleme yok') }}{% endif %}
+  </div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <div class="card-h"><h3>En çok satan satıcılar</h3></div>
+    {% if top_sellers %}<div class="table-wrap"><table>
+      <tr><th>Satıcı</th><th class="right">Sipariş</th><th class="right">Ciro</th><th class="right">Komisyon</th></tr>
+      {% for s in top_sellers %}<tr><td><a href="{{ url_for('admin.user', uid=s.id) }}">{{ s.username }}</a>{{ pkg_marks(s.id) }}</td><td class="right">{{ s.orders }}</td><td class="right nowrap">{{ s.gmv|money }}</td><td class="right nowrap">{{ s.fee|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Veri yok') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>En çok harcayan alıcılar</h3></div>
+    {% if top_buyers %}<div class="table-wrap"><table>
+      <tr><th>Alıcı</th><th class="right">Sipariş</th><th class="right">Harcama</th></tr>
+      {% for s in top_buyers %}<tr><td><a href="{{ url_for('admin.user', uid=s.id) }}">{{ s.username }}</a></td><td class="right">{{ s.orders }}</td><td class="right nowrap">{{ s.spent|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Veri yok') }}{% endif %}
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-h"><h3>En çok satan ilanlar</h3></div>
+    {% if top_listings %}<div class="table-wrap"><table>
+      <tr><th>İlan</th><th class="right">Adet</th><th class="right">Ciro</th></tr>
+      {% for l in top_listings %}<tr><td>{{ l.listing_title[:44] }}</td><td class="right">{{ l.qty }}</td><td class="right nowrap">{{ l.gmv|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Veri yok') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Kupon ve banner performansı</h3></div>
+    {% if coupon_rows %}<div class="table-wrap mb"><table>
+      <tr><th>Kupon</th><th class="right">Kullanım</th><th class="right">İndirim</th></tr>
+      {% for c in coupon_rows %}<tr><td class="mono">{{ c.code }}</td><td class="right">{{ c.n }}</td><td class="right nowrap">{{ c.given|money }}</td></tr>{% endfor %}
+    </table></div>{% endif %}
+    {% if banner_rows %}<div class="table-wrap"><table>
+      <tr><th>Banner</th><th class="right">Gösterim</th><th class="right">Tıklama</th></tr>
+      {% for b in banner_rows %}<tr><td>{{ b.title[:32] }}</td><td class="right">{{ b.views }}</td><td class="right">{{ b.clicks }}</td></tr>{% endfor %}
+    </table></div>{% elif not coupon_rows %}{{ empty('Veri yok') }}{% endif %}
+  </div>
+</div>
+{% endblock %}

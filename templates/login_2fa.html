@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block title %}İki Adımlı Doğrulama{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="auth-wrap">
+    <div class="auth-art">
+      <div><a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">{{ site_name[:1]|upper }}</span>{{ site_name }}</a></div>
+      <div>
+        <h2>Bir adım daha.</h2>
+        <ul>
+          <li>{{ ic('shield-check') }}<span>Hesabın iki adımlı doğrulamayla korunuyor</span></li>
+          <li>{{ ic('bolt') }}<span>Kod 30 saniyede bir yenilenir</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="auth-form">
+      <h1>Doğrulama kodu</h1>
+      <p class="muted">Doğrulama uygulamandaki 6 haneli kodu gir. Telefonuna erişemiyorsan bir yedek kod kullanabilirsin.</p>
+      <form method="post" action="{{ url_for('accsec.login_2fa') }}">
+        {{ csrf_field() }}
+        <div class="field"><label for="code">Kod veya yedek kod</label><input class="code-input" type="text" id="code" name="code" required autofocus maxlength="16" autocomplete="one-time-code"></div>
+        <button class="btn btn-block btn-lg" type="submit">Doğrula ve Giriş Yap</button>
+      </form>
+      <p class="center muted mt"><a href="{{ url_for('login') }}">Girişe dön</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

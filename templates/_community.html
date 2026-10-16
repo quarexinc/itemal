@@ -1,0 +1,26 @@
+{% from "_macros.html" import ic with context %}
+{% macro follow_btn(seller_id, following, count, small=false) %}
+<form class="inline-form follow-form" method="post" action="{{ url_for('community.follow_toggle', sid=seller_id) }}" data-follow>
+  {{ csrf_field() }}
+  <button class="btn {{ 'btn-line' if following else '' }} {{ 'btn-sm' if small }}" type="submit" data-follow-btn>{{ ic('users') }}<span data-follow-label>{{ 'Takip ediliyor' if following else 'Takip et' }}</span><em class="follow-count" data-follow-count>{{ count }}</em></button>
+</form>
+{% endmacro %}
+
+{% macro gw_card(gw, entered=false, left='') %}
+<a class="gw-card" href="{{ url_for('community.giveaway_view', gid=gw.id) }}">
+  <div class="gw-top"><span class="gw-ico">{{ ic('gift') }}</span><div class="gw-prize"><small>Ödül</small><b>{{ gw.prize }}</b></div></div>
+  <h3>{{ gw.title }}</h3>
+  <div class="muted small">{{ gw.store_name or gw.seller_name }}</div>
+  <div class="gw-meta">
+    <span>{{ ic('users') }}{{ gw.entry_count }} katılımcı</span>
+    <span>{{ ic('trophy') }}{{ gw.winners }} kazanan</span>
+    {% if gw.status == 'open' %}<span>{{ ic('clock') }}{{ left }}</span>{% endif %}
+  </div>
+  <div class="gw-tags">
+    {% if gw.need_follow %}<span class="chip-s">Takip şartı</span>{% endif %}
+    {% if gw.need_purchase %}<span class="chip-s">Alışveriş şartı</span>{% endif %}
+    {% if entered %}<span class="chip-s ok">Katıldın</span>{% endif %}
+    {% if gw.status == 'drawn' %}<span class="chip-s">Sonuçlandı</span>{% endif %}
+  </div>
+</a>
+{% endmacro %}

@@ -1,0 +1,58 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import badge, pager, empty, rating_line, ic with context %}
+{% block title %}İlanlarım{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>İlanlarım</h1><a class="btn" href="{{ url_for('seller.listing_new') }}">Yeni İlan</a></div>
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Toplam ilan</div><div class="v">{{ counts.n }}</div><div class="s">{{ counts.active }} yayında</div></div>
+  <div class="stat"><div class="k">Stoktaki kod</div><div class="v">{{ counts.stock_sum }}</div>{% if counts.soldout %}<div class="s neg">{{ counts.soldout }} ilan tükendi</div>{% endif %}</div>
+  <div class="stat"><div class="k">Toplam satış</div><div class="v">{{ counts.sales }}</div></div>
+  <div class="stat"><div class="k">Görüntülenme</div><div class="v">{{ counts.views }}</div>{% if counts.views %}<div class="s">Dönüşüm %{{ (counts.sales * 100 / counts.views)|round(1)|string|replace('.', ',') }}</div>{% endif %}</div>
+</div>
+<div class="tabs">
+  {% for key, label, n in [('', 'Hepsi', counts.n), ('active', 'Yayında', counts.active), ('paused', 'Duraklatılan', counts.paused), ('soldout', 'Stoksuz', counts.soldout), ('blocked', 'Engelli', counts.blocked)] %}
+  <a class="{{ 'on' if status == key }}" href="{{ url_for('seller.listings', durum=key or None, sirala=sort if sort != 'yeni' else None, q=text or None) }}">{{ label }} <span class="cnt">{{ n }}</span></a>
+  {% endfor %}
+</div>
+<form class="filters" method="get" action="{{ url_for('seller.listings') }}">
+  {% if status %}<input type="hidden" name="durum" value="{{ status }}">{% endif %}
+  <div class="field grow"><label for="q">Ara</label><input type="search" id="q" name="q" value="{{ text }}" placeholder="İlan başlığı"></div>
+  <div class="field"><label for="sirala">Sırala</label><select id="sirala" name="sirala">{% for k, v in sorts.items() %}<option value="{{ k }}" {{ 'selected' if sort == k }}>{{ v[0] }}</option>{% endfor %}</select></div>
+  <div class="field"><button class="btn" type="submit">Uygula</button></div>
+</form>
+{% if page.rows %}
+<form id="bulkform" method="post" action="{{ url_for('seller.bulk') }}" data-bulk>
+  {{ csrf_field() }}
+  <div class="bulk-bar">
+    <b data-bulk-count>0 ilan seçili</b>
+    <select name="action" aria-label="Toplu işlem" onchange="document.getElementById('bulk-pct').hidden = this.value !== 'price'">
+      <option value="pause">Duraklat</option><option value="activate">Yayına al</option><option value="price">Fiyatı yüzde ile değiştir</option><option value="delete">Sil</option>
+    </select>
+    <input type="text" id="bulk-pct" name="pct" placeholder="% (örn. 10 ya da -5)" size="14" hidden inputmode="decimal">
+    <button class="btn btn-sm" type="submit">Uygula</button>
+  </div>
+<div class="table-wrap"><table>
+  <tr><th class="chk"><input type="checkbox" data-check-all='input[name="ids"]' aria-label="Hepsini seç"></th><th>İlan</th><th class="right">Fiyat</th><th class="right">Stok</th><th class="right">Satış</th><th class="right">Görüntülenme</th><th>Puan</th><th>Durum</th><th></th></tr>
+  {% for l in page.rows %}<tr>
+    <td class="chk"><input type="checkbox" name="ids" value="{{ l.id }}" aria-label="İlanı seç"></td>
+    <td><div class="row" style="flex-wrap:nowrap"><div class="thumb">{% if l.cover %}<img src="{{ cover_url(l.cover, true) }}" alt="">{% endif %}</div><div><a href="{{ url_for('listing_detail', lid=l.id) }}"><b>{{ l.title[:52] }}</b></a><div class="muted small">{{ l.cat_name }}</div>{% if l.dp %}<div class="dp-tags">{% for d in l.dp %}<span class="dp-tag dp-{{ d.kind }}" title="{{ d.label }} - bitiş {{ d.ends_at|dt }}">{{ ic('flame') }}{{ d.label }} <small>{{ d.ends_at|dt }}</small></span>{% endfor %}</div>{% endif %}</div></div></td>
+    <td class="right nowrap">{{ l.price|money }}</td>
+    <td class="right"><span class="badge b-{{ 'bad' if l.stock == 0 else ('warn' if l.stock < 5 else 'ok') }}">{{ 'Tükendi' if l.stock == 0 else l.stock }}</span></td>
+    <td class="right">{{ l.sales_count }}</td>
+    <td class="right">{{ l.views }}{% if l.views %}<div class="muted small">%{{ (l.sales_count * 100 / l.views)|round(1)|string|replace('.', ',') }} dönüşüm</div>{% endif %}</td>
+    <td>{{ rating_line(rating_of(l), l.rating_count) }}</td>
+    <td>{{ badge(l.status) }}</td>
+    <td class="actions">
+      <div class="mini-form">
+        <a class="btn {{ '' if l.stock < 5 else 'btn-ghost' }} btn-sm" href="{{ url_for('seller.stock', lid=l.id) }}">{{ 'Kod ekle' if l.stock < 5 else 'Stok' }}</a>
+        {% if l.status == 'active' %}<a class="btn btn-dp btn-sm" href="{{ url_for('seller.doping_buy', lid=l.id) }}">{{ ic('flame') }}Doping al</a>{% endif %}
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('seller.listing_edit', lid=l.id) }}">Düzenle</a>
+        {% if l.status != 'blocked' %}<form method="post" action="{{ url_for('seller.listing_status', lid=l.id) }}">{{ csrf_field() }}<button class="btn btn-line btn-sm" type="submit">{{ 'Duraklat' if l.status == 'active' else 'Yayınla' }}</button></form>{% endif %}
+        <button class="btn btn-ghost btn-sm" type="submit" formaction="{{ url_for('seller.listing_copy', lid=l.id) }}" formnovalidate title="İlanı stoksuz, duraklatılmış olarak kopyala">Kopyala</button>
+        <button class="btn btn-danger btn-sm" type="submit" formaction="{{ url_for('seller.listing_delete', lid=l.id) }}" formnovalidate onclick="return confirm('Bu ilan silinsin mi? Geçmiş siparişler korunur.')">Sil</button>
+      </div>
+    </td>
+  </tr>{% endfor %}
+</table></div></form>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Bu filtreyle ilan yok' if (status or text) else 'Henüz ilanın yok', 'Kapak görseli, net açıklama ve doğru fiyatla ilk ilanını oluştur.' if not (status or text) else 'Filtreyi değiştirmeyi dene.') }}</div>{% endif %}
+{% endblock %}

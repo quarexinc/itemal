@@ -1,0 +1,37 @@
+{% extends layout %}
+{% from "_macros.html" import ic with context %}
+{% block heading %}İki adımlı doğrulama{% if not done %} kurulumu{% endif %}{% endblock %}
+{% block wrap_class %} wide{% endblock %}
+{% block panel %}
+{% if done %}
+  <div class="notice ok">İki adımlı doğrulama etkinleştirildi.</div>
+  <h3 style="margin:0 0 6px">Yedek kodların</h3>
+  <p class="muted" style="margin-top:0">Telefonuna erişemezsen bu kodlarla giriş yapabilirsin. Her kod yalnızca bir kez çalışır. <b>Bu kodlar bir daha gösterilmeyecek</b>; şimdi güvenli bir yere kaydet.</p>
+  <div class="code-grid" id="backup-codes">{% for c in codes %}<code>{{ c }}</code>{% endfor %}</div>
+  <div class="row" style="margin-top:16px">
+    <button class="btn btn-line btn-sm" type="button" data-copy="#backup-codes code">{{ ic('copy') }}Kodları kopyala</button>
+    <a class="btn btn-sm" href="{{ nxt or url_for('admin.dashboard') }}">Panele geç</a>
+  </div>
+{% else %}
+  <p class="muted" style="margin-top:0">{% if full %}Yönetici hesabına ikinci bir doğrulama adımı eklenir.{% else %}Yönetici girişi için iki adımlı doğrulama zorunlu. Devam etmek için bir kez kurman gerekiyor.{% endif %}</p>
+  <div class="tf-setup">
+    {% if qr %}<div class="tf-qr" role="img" aria-label="Authenticator QR kodu">{{ qr }}</div>{% endif %}
+    <div>
+      <ol class="tf-steps">
+        <li>Telefonunda bir authenticator uygulaması aç (Google Authenticator, Microsoft Authenticator, Aegis, 1Password vb.).</li>
+        <li>{% if qr %}QR kodu tara ya da{% endif %} aşağıdaki anahtarı elle gir (zaman tabanlı, 6 hane).</li>
+        <li>Uygulamada görünen 6 haneli kodu aşağıya yaz.</li>
+      </ol>
+      <div class="tf-key" id="tf-key">{{ secret_fmt }}</div>
+      <button class="btn btn-ghost btn-sm" type="button" data-copy="{{ secret }}">{{ ic('copy') }}Anahtarı kopyala</button>
+    </div>
+  </div>
+  <form method="post" action="{{ url_for('admin.setup') }}" autocomplete="off" style="margin-top:18px">
+    {{ csrf_field() }}
+    {% if full %}<div class="field"><label for="password">Yönetici şifren</label><input type="password" id="password" name="password" required autocomplete="current-password"></div>{% endif %}
+    <div class="field"><label for="code">Uygulamadaki 6 haneli kod</label><input class="tf-input" type="text" id="code" name="code" required {% if not full %}autofocus{% endif %} autocomplete="one-time-code" inputmode="numeric" maxlength="8" pattern="[0-9 ]*" placeholder="000000"></div>
+    <button class="btn btn-block" type="submit">Doğrula ve etkinleştir</button>
+  </form>
+  {% if not full %}<div style="margin-top:12px"><form class="inline-form" method="post" action="{{ url_for('admin.logout') }}">{{ csrf_field() }}<button class="btn btn-ghost btn-sm" type="submit">Vazgeç</button></form></div>{% endif %}
+{% endif %}
+{% endblock %}

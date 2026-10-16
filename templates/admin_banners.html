@@ -1,0 +1,58 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import empty, ic with context %}
+{% block heading %}Bannerlar{% endblock %}
+{% block panel %}
+{% set f = edit if edit else form %}
+<div class="notice">Doping ile satın alınan reklam bannerları <b>Reklam (satın alınan)</b> etiketiyle listelenir; kapatabilir ya da silebilirsin. Süreleri ve kapasite <a href="{{ url_for('admin.doping') }}">Doping</a> sayfasından izlenir.</div>
+<div class="notice">Ana sayfada <b>Slider</b> konumu büyük kayan afişleri, <b>Reklam şeridi</b> konumu bölümlerin arasındaki geniş bantları gösterir. Görsel yüklemezsen renk geçişi kullanılır. Tıklama ve gösterim sayıları otomatik izlenir.</div>
+
+<div class="card mb">
+  <div class="card-h"><h3>{{ 'Banner düzenle #' ~ edit.id if edit else 'Yeni banner' }}</h3>{% if edit %}<a class="btn btn-ghost btn-sm" href="{{ url_for('admin.banners') }}">Yeni banner ekle</a>{% endif %}</div>
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.banner_edit', bid=edit.id) if edit else url_for('admin.banners') }}">
+    {{ csrf_field() }}
+    <div class="form-row">
+      <div class="field"><label for="slot">Konum</label><select id="slot" name="slot"><option value="hero" {{ 'selected' if f.slot == 'hero' }}>Slider (büyük)</option><option value="strip" {{ 'selected' if f.slot == 'strip' }}>Reklam şeridi</option></select></div>
+      <div class="field"><label for="title">Başlık</label><input type="text" id="title" name="title" value="{{ f.title }}" required maxlength="70"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="subtitle">Alt metin</label><input type="text" id="subtitle" name="subtitle" value="{{ f.subtitle }}" maxlength="140"></div>
+      <div class="field"><label for="cta_text">Düğme yazısı</label><input type="text" id="cta_text" name="cta_text" value="{{ f.cta_text }}" maxlength="30" placeholder="Örn. Hemen incele"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="link">Bağlantı</label><input type="text" id="link" name="link" value="{{ f.link }}" maxlength="300" placeholder="/ilanlar?kategori=discord"><div class="hint">Site içi yol ya da https:// ile başlayan adres.</div></div>
+      <div class="field"><label for="sort_order">Sıra</label><input type="number" id="sort_order" name="sort_order" value="{{ f.sort_order or 0 }}"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="color1">Renk 1</label><div class="row" style="flex-wrap:nowrap"><input type="color" data-hex="#color1t" value="{{ f.color1 or '#7c5cff' }}" style="width:56px"><input type="text" id="color1t" name="color1" value="{{ f.color1 or '#7c5cff' }}" maxlength="7"></div></div>
+      <div class="field"><label for="color2">Renk 2</label><div class="row" style="flex-wrap:nowrap"><input type="color" data-hex="#color2t" value="{{ f.color2 or '#1b1140' }}" style="width:56px"><input type="text" id="color2t" name="color2" value="{{ f.color2 or '#1b1140' }}" maxlength="7"></div></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="starts_at">Başlangıç (isteğe bağlı, Türkiye saati)</label><input type="datetime-local" id="starts_at" name="starts_at" value="{{ (f.starts_at|local_input) if edit else (f.starts_at or '') }}"></div>
+      <div class="field"><label for="ends_at">Bitiş (isteğe bağlı)</label><input type="datetime-local" id="ends_at" name="ends_at" value="{{ (f.ends_at|local_input) if edit else (f.ends_at or '') }}"></div>
+    </div>
+    <div class="field"><label for="image">Görsel (isteğe bağlı, yatay, en az 200 px)</label><input type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" data-preview="#ban-prev">
+      <img id="ban-prev" class="preview-img" alt="Önizleme" {% if edit and edit.image %}src="{{ url_for('media_cover', name=edit.image) }}"{% else %}hidden{% endif %}>
+      {% if edit and edit.image %}<label class="check mt"><input type="checkbox" name="remove_image" value="1"> Mevcut görseli kaldır</label>{% endif %}</div>
+    <label class="check field"><input type="checkbox" name="is_active" value="1" {{ 'checked' if (edit.is_active if edit else (f.is_active if f else true)) }}> Yayında</label>
+    <button class="btn" type="submit">{{ 'Kaydet' if edit else 'Banner ekle' }}</button>
+  </form>
+</div>
+
+{% if rows %}
+<div class="table-wrap"><table>
+  <tr><th>Önizleme</th><th>Konum</th><th>Sıra</th><th>Zaman</th><th class="right">Gösterim</th><th class="right">Tıklama</th><th class="right">Oran</th><th>Durum</th><th></th></tr>
+  {% for b in rows %}<tr>
+    <td><div class="ban-prev" style="--c1:{{ b.color1 }};--c2:{{ b.color2 }}">{{ b.title[:28] }}</div></td>
+    <td>{{ 'Slider' if b.slot == 'hero' else 'Şerit' }}{% if b.is_ad %}<br><span class="badge b-info" title="Doping ile satın alınan reklam; ilan: #{{ b.listing_id }}">Reklam (satın alınan)</span>{% if b.listing_id %}<div class="small"><a href="{{ url_for('listing_detail', lid=b.listing_id) }}">İlan #{{ b.listing_id }}</a></div>{% endif %}{% endif %}</td><td>{{ b.sort_order }}</td>
+    <td class="small muted nowrap">{% if b.starts_at or b.ends_at %}{{ b.starts_at|dt if b.starts_at else '...' }}<br>{{ b.ends_at|dt if b.ends_at else '...' }}{% else %}Sürekli{% endif %}</td>
+    <td class="right">{{ b.views }}</td><td class="right">{{ b.clicks }}</td><td class="right">{{ '%.1f'|format(b.clicks * 100 / b.views) if b.views else '-' }}{% if b.views %}%{% endif %}</td>
+    <td><span class="badge b-{{ 'ok' if b.is_active else 'muted' }}">{{ 'Yayında' if b.is_active else 'Kapalı' }}</span></td>
+    <td class="actions"><div class="mini-form">
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.banner_edit', bid=b.id) }}">Düzenle</a>
+      <form method="post" action="{{ url_for('admin.banner_action', bid=b.id) }}">{{ csrf_field() }}<input type="hidden" name="action" value="toggle"><button class="btn btn-line btn-sm" type="submit">{{ 'Kapat' if b.is_active else 'Aç' }}</button></form>
+      <form method="post" action="{{ url_for('admin.banner_action', bid=b.id) }}" data-confirm="Banner silinsin mi?">{{ csrf_field() }}<input type="hidden" name="action" value="delete"><button class="btn btn-danger btn-sm" type="submit">Sil</button></form>
+    </div></td>
+  </tr>{% endfor %}
+</table></div>
+{% else %}<div class="card">{{ empty('Banner yok', 'Yukarıdaki formla ilk bannerını ekle.') }}</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import pager, empty, badge with context %}
+{% block title %}Shopier{% endblock %}
+{% block heading %}Shopier ödeme entegrasyonu{% endblock %}
+{% block panel %}
+<div class="grid g-main mb" style="align-items:start">
+  <form method="post" action="{{ url_for('admin.admin_shopier') }}" class="card" autocomplete="off">
+    {{ csrf_field() }}
+    <div class="card-h"><h3>API ayarları</h3><span class="badge b-{{ 'ok' if ready else 'muted' }}">{{ 'Aktif' if ready else 'Kapalı' }}</span></div>
+    <label class="check field"><input type="checkbox" name="shopier_enabled" value="1" {{ 'checked' if cfg.shopier_enabled == '1' }}> <span>Shopier ile bakiye yükleme açık</span></label>
+    <div class="form-row">
+      <div class="field"><label for="shopier_api_key">API key (API kullanıcı)</label><input type="text" id="shopier_api_key" name="shopier_api_key" value="{{ request.form.get('shopier_api_key', raw_key) }}" maxlength="120" autocomplete="off"></div>
+      <div class="field"><label for="shopier_api_secret">API secret</label><input type="password" id="shopier_api_secret" name="shopier_api_secret" maxlength="200" autocomplete="new-password" placeholder="{{ 'Kayıtlı (değiştirmek için yaz)' if has_secret else 'Gizli anahtarı yapıştır' }}"></div>
+    </div>
+    {% if has_secret %}<label class="check field"><input type="checkbox" name="clear_secret" value="1"> <span>Kayıtlı secret'ı sil</span></label>{% endif %}
+    <div class="form-row">
+      <div class="field"><label for="shopier_website_index">Site sırası (1-5)</label><input type="number" id="shopier_website_index" name="shopier_website_index" min="1" max="5" value="{{ cfg.shopier_website_index }}" required></div>
+      <div class="field"><label for="shopier_payment_url">Ödeme adresi</label><input type="text" id="shopier_payment_url" name="shopier_payment_url" value="{{ cfg.shopier_payment_url }}" maxlength="200"></div>
+    </div>
+    <h4 class="mt">Fatura / teslimat alanları</h4>
+    <p class="muted small">Shopier bu alanları zorunlu tutar. Dijital teslimatta herkes için aynı değerler gönderilir.</p>
+    <div class="field"><label for="shopier_address">Adres</label><input type="text" id="shopier_address" name="shopier_address" value="{{ cfg.shopier_address }}" maxlength="200"></div>
+    <div class="form-row">
+      <div class="field"><label for="shopier_city">Şehir</label><input type="text" id="shopier_city" name="shopier_city" value="{{ cfg.shopier_city }}" maxlength="60"></div>
+      <div class="field"><label for="shopier_country">Ülke</label><input type="text" id="shopier_country" name="shopier_country" value="{{ cfg.shopier_country }}" maxlength="60"></div>
+      <div class="field"><label for="shopier_postcode">Posta kodu</label><input type="text" id="shopier_postcode" name="shopier_postcode" value="{{ cfg.shopier_postcode }}" maxlength="12"></div>
+    </div>
+    <label class="check field"><input type="checkbox" name="shopier_auto_credit" value="1" {{ 'checked' if cfg.shopier_auto_credit == '1' }}> <span>İmzası doğru başarılı ödemeleri bakiyeye otomatik ekle (kapalıysa her ödeme onayına düşer)</span></label>
+    <h4 class="mt">Otomatik sipariş bildirimi (OSB)</h4>
+    <p class="muted small">Shopier mağaza panelindeki OSB kullanıcı adı ve anahtarı. Shopier siparişi bu adrese sunucudan sunucuya bildirir; imza doğrulanırsa, tutar kayıtla eşleşirse ödeme kesinleşir (tarayıcı dönüşü gelmese bile).</p>
+    <div class="form-row">
+      <div class="field"><label for="shopier_osb_username">OSB kullanıcı adı</label><input type="text" id="shopier_osb_username" name="shopier_osb_username" value="{{ osb_user }}" maxlength="80" autocomplete="off"></div>
+      <div class="field"><label for="shopier_osb_key">OSB anahtarı</label><input type="password" id="shopier_osb_key" name="shopier_osb_key" maxlength="200" autocomplete="new-password" placeholder="{{ 'Kayıtlı (değiştirmek için yaz)' if has_osb_key else 'Anahtarı yapıştır' }}"></div>
+    </div>
+    {% if has_osb_key %}<label class="check field"><input type="checkbox" name="clear_osb" value="1"> <span>Kayıtlı OSB anahtarını sil</span></label>{% endif %}
+    <div class="field"><label>OSB adresi (Shopier paneline yaz)</label><div class="codebox"><code id="osb-url">{{ osb_url }}</code><button type="button" class="btn btn-ghost btn-sm" data-copy="#osb-url">Kopyala</button></div></div>
+    <h4 class="mt">Komisyon</h4>
+    <p class="muted small">Shopier her satıştan aylık ciroya göre komisyon keser. Oranı Shopier panelinden kontrol edip buraya yaz; site bunu bakiye yükleyen kullanıcıya yansıtır.</p>
+    <div class="field"><label for="shopier_fee_mode">Komisyon kime yansısın</label>
+      <select id="shopier_fee_mode" name="shopier_fee_mode">
+        <option value="user" {{ 'selected' if fee_input.mode == 'user' }}>Kullanıcı öder: ödenecek tutara eklenir, yüklediği tutar bakiyeye tam geçer</option>
+        <option value="deduct" {{ 'selected' if fee_input.mode == 'deduct' }}>Yüklenen tutardan düşülür: komisyon kesilmiş tutar bakiyeye geçer</option>
+        <option value="none" {{ 'selected' if fee_input.mode == 'none' }}>Yansıtma: komisyonu site öder</option>
+      </select></div>
+    <div class="form-row">
+      <div class="field"><label for="shopier_fee_percent">Komisyon yüzdesi (%)</label><input type="text" inputmode="decimal" id="shopier_fee_percent" name="shopier_fee_percent" value="{{ fee_input.percent }}" maxlength="6" required></div>
+      <div class="field"><label for="shopier_fee_fixed">Sabit işlem ücreti (TL)</label><input type="text" inputmode="decimal" id="shopier_fee_fixed" name="shopier_fee_fixed" value="{{ fee_input.fixed }}" maxlength="8" required></div>
+      <div class="field"><label for="shopier_fee_vat">Komisyona KDV (%)</label><input type="text" inputmode="decimal" id="shopier_fee_vat" name="shopier_fee_vat" value="{{ fee_input.vat }}" maxlength="5" required></div>
+    </div>
+    <div class="table-wrap"><table class="small">
+      <tr><th>Aylık Shopier cirosu</th><th class="right">Komisyon (KDV hariç)</th></tr>
+      <tr><td>15.000 TL altı</td><td class="right">%5,99 + 0,49 TL</td></tr>
+      <tr><td>15.000 - 59.999 TL</td><td class="right">%5,49 + 0,49 TL</td></tr>
+      <tr><td>60.000 - 149.999 TL</td><td class="right">%4,99 + 0,49 TL</td></tr>
+      <tr><td>150.000 - 299.999 TL</td><td class="right">%4,49 + 0,49 TL</td></tr>
+      <tr><td>300.000 - 749.999 TL</td><td class="right">%3,99 + 0,49 TL</td></tr>
+      <tr><td>750.000 - 1.499.999 TL</td><td class="right">%3,49 + 0,49 TL</td></tr>
+      <tr><td>1.500.000 TL ve üzeri</td><td class="right">%2,99 + 0,49 TL</td></tr>
+    </table></div>
+    <p class="muted small">Tablo yayımlanmış kaynaklardan derlenmiştir ve değişebilir; geçerli oran için Shopier mağaza panelindeki ücret sayfasına bak. Cirona göre değişince yukarıdaki yüzdeyi güncelle.</p>
+    <div class="table-wrap"><table class="small">
+      <tr><th>Yüklenmek istenen</th><th class="right">Komisyon</th><th class="right">Kullanıcı öder</th><th class="right">Bakiyeye geçer</th></tr>
+      {% for v, qt in fee_examples %}<tr><td>{{ v }},00 ₺</td><td class="right">{{ qt.fee|money }}</td><td class="right">{{ qt.charge|money }}</td><td class="right">{{ qt.credit|money }}</td></tr>{% endfor %}
+    </table></div>
+    <button class="btn" type="submit">Kaydet</button>
+  </form>
+
+  <div class="card">
+    <h3 class="mt0">Kurulum adımları</h3>
+    <ol class="muted">
+      <li>Shopier mağaza panelinden API kullanıcı (key) ve API şifresi (secret) bilgilerini al; developer.shopier.com adresindeki geliştirici portalını kullan.</li>
+      <li>Bilgileri soldaki forma yapıştırıp Shopier'i aç.</li>
+      <li>Shopier panelinde varsa "geri dönüş / callback" adresine şunu yaz:
+        <div class="codebox"><code id="cb-url">{{ callback_url }}</code><button type="button" class="btn btn-ghost btn-sm" data-copy="#cb-url">Kopyala</button></div></li>
+      <li>Küçük bir tutarla deneme ödemesi yap; kayıt aşağıdaki listede görünür.</li>
+    </ol>
+    <p class="muted small">Ödeme tutarı her zaman bu sitedeki kayıttan alınır; Shopier'den gelen veri yalnızca imzası doğrulandıktan sonra ödemenin başarılı olup olmadığını belirler. Geri dönüşte imzaya durum ve tutar dahil değildir; bu yüzden ilk günlerde kayıtları Shopier panelindeki ödemelerle karşılaştır veya otomatik eklemeyi kapatıp her ödemeyi onayla.</p>
+  </div>
+</div>
+
+<div class="tabs">
+  {% for key, label in [('all', 'Tümü'), ('review', 'Onay bekleyen'), ('success', 'Başarılı'), ('created', 'Bekleyen'), ('failed', 'Başarısız'), ('rejected', 'Reddedilen')] %}
+  <a class="{{ 'on' if status == key }}" href="{{ url_for('admin.admin_shopier', durum=key) }}">{{ label }}{% if key != 'all' and counts.get(key) %} ({{ counts.get(key) }}){% endif %}</a>
+  {% endfor %}
+</div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>Kullanıcı</th><th class="right">Ödenen</th><th class="right">Komisyon</th><th class="right">Bakiye</th><th>Durum</th><th>Shopier ödeme no</th><th>Taksit</th><th></th></tr>
+  {% for p in page.rows %}<tr>
+    <td>#{{ p.id }}</td><td class="nowrap">{{ p.created_at|dt }}<div class="muted small">{{ p.ip }}</div></td>
+    <td><a href="{{ url_for('admin.user', uid=p.user_id) }}">{{ p.username }}</a></td>
+    <td class="right nowrap">{{ (p.charged or p.amount)|money }}</td><td class="right nowrap muted">{{ p.fee|money }}</td><td class="right nowrap"><b>{{ p.amount|money }}</b></td>
+    <td><span class="badge b-{{ {'success': 'ok', 'review': 'warn', 'created': 'muted', 'failed': 'bad', 'rejected': 'bad'}[p.status] }}">{{ {'success': 'Başarılı', 'review': 'Onay bekliyor', 'created': 'Ödeme bekleniyor', 'failed': 'Başarısız', 'rejected': 'Reddedildi'}[p.status] }}</span>{% if p.admin_note %}<div class="muted small">{{ p.admin_note }}</div>{% endif %}</td>
+    <td class="mono">{{ p.payment_id or '-' }}</td><td>{{ p.installment or '-' }}</td>
+    <td class="actions">{% if p.status in ('review', 'created', 'failed') %}
+      <form method="post" action="{{ url_for('admin.admin_shopier_action', pid=p.id) }}" class="stack-form">{{ csrf_field() }}
+        <input type="text" name="note" maxlength="300" placeholder="Not">
+        <div class="row"><button class="btn btn-ok btn-sm" name="action" value="approve" type="submit" data-confirm="Ödeme Shopier panelinde görünüyor mu? Bakiye eklensin mi?">Bakiye ekle</button>
+        <button class="btn btn-danger btn-sm" name="action" value="reject" type="submit">Reddet</button></div>
+      </form>{% endif %}</td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Shopier ödemesi yok') }}</div>{% endif %}
+<h3 class="mt">OSB bildirimleri</h3>
+{% if osb_rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>Sipariş</th><th>Alıcı</th><th class="right">Tutar</th><th>Durum</th><th>Kayıt</th></tr>
+  {% for o in osb_rows %}<tr>
+    <td>#{{ o.id }}</td><td class="nowrap">{{ o.created_at|dt }}</td><td class="mono">{{ o.orderid }}</td>
+    <td>{{ o.buyer or '-' }}<div class="muted small">{{ o.email }}</div></td>
+    <td class="right nowrap">{{ o.price|money if o.price is not none else '-' }}</td>
+    <td><span class="badge b-{{ {'credited': 'ok', 'review': 'warn', 'duplicate': 'muted', 'mismatch': 'bad', 'unmatched': 'muted', 'test': 'muted'}[o.status] }}">{{ {'credited': 'Bakiye eklendi', 'review': 'Onay bekliyor', 'duplicate': 'Zaten işlenmişti', 'mismatch': 'Tutar uyuşmuyor', 'unmatched': 'Eşleşmedi', 'test': 'Test'}[o.status] }}</span></td>
+    <td>{% if o.payment_id %}#{{ o.payment_id }}{% else %}-{% endif %}</td>
+  </tr>{% endfor %}
+</table></div>
+{% else %}<div class="card">{{ empty('Henüz OSB bildirimi gelmedi') }}</div>{% endif %}
+{% endblock %}

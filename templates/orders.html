@@ -1,0 +1,17 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import pager, empty %}
+{% block title %}Siparişlerim{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Siparişlerim</h1></div>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>No</th><th>Tarih</th><th>İlan</th><th>Satıcı</th><th class="right">Adet</th><th class="right">Tutar</th><th>Durum</th><th></th></tr>
+  {% for o in page.rows %}<tr>
+    <td><a href="{{ url_for('order_detail', oid=o.id) }}">#{{ o.id }}</a></td><td>{{ o.created_at|dt }}</td><td><a href="{{ url_for('listing_detail', lid=o.listing_id) }}">{{ o.listing_title }}</a></td>
+    <td><a href="{{ url_for('storefront', username=o.seller_name) }}">{{ o.seller_name }}</a>{{ pkg_marks(o.seller_id) }}</td><td class="right">{{ o.quantity }}</td><td class="right nowrap">{{ o.total|money }}</td>
+    <td><span class="badge b-{{ o.escrow_status|sclass }}">{{ o.escrow_status|slabel }}</span></td>
+    <td class="actions"><a class="btn btn-ghost btn-sm" href="{{ url_for('order_detail', oid=o.id) }}">{{ 'Onayla' if o.escrow_status == 'held' else 'Detay' }}</a></td>
+  </tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Henüz sipariş vermedin', 'İlanlara göz atarak ilk alışverişini yapabilirsin.') }}</div>{% endif %}
+{% endblock %}

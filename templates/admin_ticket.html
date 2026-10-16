@@ -1,0 +1,56 @@
+{% extends "admin_base.html" %}
+{% block title %}Talep #{{ t.id }}{% endblock %}
+{% block heading %}Talep #{{ t.id }}{% endblock %}
+{% block panel %}
+<div class="spread mb">
+  <div>
+    <h2 style="margin:0">{{ t.subject }}</h2>
+    <span class="muted small"><a href="{{ url_for('admin.user', uid=t.user_id) }}">{{ t.username }}</a> &middot; {{ t.email }} &middot; {{ t.category|tcat }} &middot; {{ t.created_at|dt }}
+      {% if order %} &middot; Sipariş #{{ order.id }} ({{ order.listing_title[:40] }}, {{ order.total|money }}){% endif %}</span>
+  </div>
+  <div class="row"><span class="badge b-{{ t.priority|pclass }}">{{ t.priority|plabel }}</span><span class="badge b-{{ t.status|tclass }}">{{ t.status|tlabel }}</span></div>
+</div>
+
+{% for m in msgs %}
+<div class="tmsg {{ 'internal' if m.is_internal else ('staff' if m.author == 'staff') }}">
+  <div class="meta"><b>{{ 'İç not (kullanıcı göremez)' if m.is_internal else ('Destek ekibi' if m.author == 'staff' else t.username) }}</b><span>{{ m.created_at|dt }}</span></div>
+  <div class="pre">{{ m.body }}</div>
+</div>
+{% endfor %}
+
+<div class="grid g2">
+  <div class="card">
+    <h3 class="mt0">Kullanıcıya yanıt ver</h3>
+    <form method="post" action="{{ url_for('admin.ticket', tid=t.id) }}">
+      {{ csrf_field() }}<input type="hidden" name="action" value="reply">
+      <div class="field"><textarea id="reply-body" name="message" required maxlength="3000" aria-label="Yanıt"></textarea>
+        <div class="quick">
+          <button type="button" data-fill="Merhaba, talebini aldık ve inceliyoruz. En kısa sürede dönüş yapacağız." data-target="#reply-body">İnceleniyor</button>
+          <button type="button" data-fill="Merhaba, sorunu çözebilmemiz için sipariş numaranı ve varsa ekran görüntüsünü paylaşabilir misin?" data-target="#reply-body">Bilgi iste</button>
+          <button type="button" data-fill="Merhaba, bakiye yüklemen kontrol edildi ve hesabına eklendi. İyi alışverişler dileriz." data-target="#reply-body">Yükleme onaylandı</button>
+          <button type="button" data-fill="Merhaba, sorunun çözüldüğünü düşünüyoruz. Başka bir sorun olursa aynı talep üzerinden yazabilirsin." data-target="#reply-body">Çözüldü</button>
+        </div></div>
+      <label class="check field"><input type="checkbox" name="close" value="1"> <span>Yanıtladıktan sonra talebi kapat</span></label>
+      <button class="btn" type="submit">Yanıtı Gönder</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3 class="mt0">İç not</h3>
+    <form method="post" action="{{ url_for('admin.ticket', tid=t.id) }}">
+      {{ csrf_field() }}<input type="hidden" name="action" value="note">
+      <div class="field"><textarea name="message" required maxlength="3000" aria-label="İç not" placeholder="Yalnızca yöneticiler görür"></textarea></div>
+      <button class="btn btn-line" type="submit">Not Ekle</button>
+    </form>
+    <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+    <div class="row">
+      <form method="post" action="{{ url_for('admin.ticket', tid=t.id) }}" class="mini-form" style="justify-content:flex-start">{{ csrf_field() }}<input type="hidden" name="action" value="status">
+        <select name="status" aria-label="Durum">{% for k in ['open', 'answered', 'closed'] %}<option value="{{ k }}" {{ 'selected' if t.status == k }}>{{ k|tlabel }}</option>{% endfor %}</select>
+        <button class="btn btn-sm" type="submit">Durumu değiştir</button></form>
+      <form method="post" action="{{ url_for('admin.ticket', tid=t.id) }}" class="mini-form" style="justify-content:flex-start">{{ csrf_field() }}<input type="hidden" name="action" value="priority">
+        <select name="priority" aria-label="Öncelik">{% for k in ['normal', 'high', 'urgent'] %}<option value="{{ k }}" {{ 'selected' if t.priority == k }}>{{ k|plabel }}</option>{% endfor %}</select>
+        <button class="btn btn-sm" type="submit">Önceliği değiştir</button></form>
+    </div>
+  </div>
+</div>
+<p class="mt"><a href="{{ url_for('admin.tickets') }}">Talep listesine dön</a></p>
+{% endblock %}

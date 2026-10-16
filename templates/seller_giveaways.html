@@ -1,0 +1,47 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import empty, ic with context %}
+{% block title %}Çekilişlerim{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Çekilişlerim</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('community.giveaways') }}" target="_blank" rel="noopener">{{ ic('external') }}Herkese açık sayfa</a></div>
+<div class="grid g3 mb">
+  <div class="stat"><div class="k">Açık çekiliş</div><div class="v">{{ open_n }} / {{ slots }}</div><div class="s">Çekiliş paketiyle hakkın artar</div></div>
+  <div class="stat"><div class="k">Takipçi</div><div class="v">{{ followers }}</div><div class="s">Yeni çekilişte bildirim alırlar</div></div>
+  <div class="stat"><div class="k">Toplam çekiliş</div><div class="v">{{ rows|length }}</div></div>
+</div>
+{% if not enabled %}<div class="notice warn">Çekiliş özelliği şu an yönetim tarafından kapatıldı.</div>
+{% else %}
+<div class="card mb">
+  <h3 class="mt0">Yeni çekiliş başlat</h3>
+  <form method="post" action="{{ url_for('seller.giveaway_new') }}">
+    {{ csrf_field() }}
+    <div class="grid g2">
+      <div class="field"><label for="title">Çekiliş başlığı</label><input type="text" id="title" name="title" required minlength="5" maxlength="80" placeholder="Örnek: 100 TL Steam kartı çekilişi"></div>
+      <div class="field"><label for="prize">Ödül</label><input type="text" id="prize" name="prize" required minlength="3" maxlength="120" placeholder="Örnek: 100 TL Steam hediye kartı"></div>
+    </div>
+    <div class="field"><label for="description">Açıklama (isteğe bağlı)</label><textarea id="description" name="description" maxlength="600" style="min-height:80px" placeholder="Katılım koşulları, ödülün nasıl teslim edileceği vb."></textarea></div>
+    <div class="grid g2">
+      <div class="field"><label for="winners">Kazanan sayısı</label><input type="number" id="winners" name="winners" min="1" max="10" value="1"></div>
+      <div class="field"><label for="hours">Süre</label><select id="hours" name="hours">{% for h, label in durations.items() %}<option value="{{ h }}" {{ 'selected' if h == 168 }}>{{ label }}</option>{% endfor %}</select></div>
+    </div>
+    <label class="check field"><input type="checkbox" name="need_follow" value="1" checked> Katılmak için mağazamı takip etmek gereksin</label>
+    <label class="check field"><input type="checkbox" name="need_purchase" value="1"> Yalnızca mağazamdan alışveriş yapanlar katılabilsin</label>
+    <button class="btn" type="submit" {{ 'disabled' if open_n >= slots }}>Çekilişi yayınla</button>
+    {% if open_n >= slots %}<span class="muted small"> Açık çekiliş sınırına ulaştın.</span>{% endif %}
+  </form>
+</div>
+{% endif %}
+{% if rows %}
+<div class="table-wrap"><table>
+  <tr><th>Çekiliş</th><th>Ödül</th><th class="right">Katılımcı</th><th class="right">Kazanan</th><th>Durum</th><th></th></tr>
+  {% for gw in rows %}<tr>
+    <td><a href="{{ url_for('community.giveaway_view', gid=gw.id) }}"><b>{{ gw.title[:50] }}</b></a><div class="muted small">{% if gw.status == 'open' %}Kalan: {{ remaining(gw.ends_at) }}{% else %}{{ (gw.drawn_at or gw.ends_at)|dt }}{% endif %}</div></td>
+    <td>{{ gw.prize[:40] }}</td><td class="right">{{ gw.entry_count }}</td><td class="right">{{ gw.winners }}</td>
+    <td><span class="badge b-{{ status[gw.status][1] }}">{{ status[gw.status][0] }}</span></td>
+    <td class="actions">{% if gw.status == 'open' %}<div class="mini-form">
+      <form method="post" action="{{ url_for('seller.giveaway_draw', gid=gw.id) }}" data-confirm="Kura şimdi çekilsin mi? Çekiliş hemen sonuçlanır.">{{ csrf_field() }}<button class="btn btn-sm" type="submit">Kurayı çek</button></form>
+      <form method="post" action="{{ url_for('seller.giveaway_cancel', gid=gw.id) }}" data-confirm="Çekiliş iptal edilsin mi?">{{ csrf_field() }}<button class="btn btn-danger btn-sm" type="submit">İptal</button></form>
+    </div>{% endif %}</td>
+  </tr>{% endfor %}
+</table></div>
+{% else %}<div class="card">{{ empty('Henüz çekiliş açmadın', 'Çekilişler mağazana takipçi ve ziyaretçi kazandırır.') }}</div>{% endif %}
+{% endblock %}

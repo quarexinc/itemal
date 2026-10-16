@@ -1,0 +1,29 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import badge, empty, ic with context %}
+{% block title %}Kazançlarım{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Kazançlarım</h1><a class="btn" href="{{ url_for('withdraw') }}">Para çek</a></div>
+<div class="grid g4 mb">
+  <div class="stat good"><div class="k">Çekilebilir</div><div class="v">{{ withdrawable|money }}</div><div class="s">Minimum çekim {{ min_w|money }}</div></div>
+  <div class="stat"><div class="k">Emanette bekleyen</div><div class="v">{{ held.s|money }}</div><div class="s">{{ held.n }} sipariş</div></div>
+  <div class="stat"><div class="k">Bekleyen çekim</div><div class="v">{{ wd.pending|money }}</div></div>
+  <div class="stat"><div class="k">Toplam çekilen (net)</div><div class="v">{{ wd.paid|money }}</div><div class="s">Toplam net kazanç {{ lifetime|money }}</div></div>
+</div>
+{% if not kyc_ok %}<div class="notice warn">Para çekebilmek için kimlik doğrulaması gerekir. <a href="{{ url_for('kyc', devam='cekim') }}">Kimliğini doğrula</a></div>{% endif %}
+
+<div class="card mb">
+  <div class="card-h"><h3>Emanetteki siparişler</h3><span class="small muted">Alıcı onaylayınca ya da süre dolunca bakiyene geçer</span></div>
+  {% if held_rows %}<div class="table-wrap"><table>
+    <tr><th>No</th><th>Sipariş tarihi</th><th>İlan</th><th>Alıcı</th><th class="right">Net</th><th>Otomatik aktarım</th><th>Durum</th></tr>
+    {% for o in held_rows %}<tr><td><a href="{{ url_for('order_detail', oid=o.id) }}">#{{ o.id }}</a></td><td class="nowrap">{{ o.created_at|dt }}</td><td>{{ o.listing_title[:38] }}</td><td>{{ o.buyer_name|mask }}</td><td class="right nowrap pos">{{ o.seller_earning|money }}</td><td class="nowrap">{{ o.release_at|dt if o.release_at else '-' }}</td><td>{{ badge(o.escrow_status) }}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Emanette bekleyen sipariş yok', 'Satışların alıcı onayından sonra hemen bakiyene geçer.') }}{% endif %}
+</div>
+
+<div class="card">
+  <div class="card-h"><h3>Çekim geçmişi</h3><span class="small muted">İşlem kesintisi %{{ fee_rate }}</span></div>
+  {% if history %}<div class="table-wrap"><table>
+    <tr><th>No</th><th>Tarih</th><th>Yöntem</th><th class="right">Tutar</th><th class="right">Kesinti</th><th class="right">Ödenecek</th><th>Durum</th><th>Not</th></tr>
+    {% for w in history %}<tr><td>#{{ w.id }}</td><td class="nowrap">{{ w.created_at|dt }}</td><td>{{ w.method }}</td><td class="right nowrap">{{ w.amount|money }}</td><td class="right nowrap muted">{{ w.fee|money }}</td><td class="right nowrap">{{ w.net|money }}</td><td>{{ badge(w.status) }}</td><td class="muted small">{{ w.admin_note }}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Henüz çekim talebin yok') }}{% endif %}
+</div>
+{% endblock %}

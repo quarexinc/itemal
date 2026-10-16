@@ -1,0 +1,34 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import badge, empty %}
+{% block title %}Hesabım{% endblock %}
+{% block panel %}
+<div class="balance-hero mb">
+  <div><small>Kullanılabilir bakiye</small><div class="amt">{{ me.balance|money }}</div></div>
+  <div class="row"><a class="btn" href="{{ url_for('balance') }}">Bakiye Yükle</a><a class="btn" href="{{ url_for('withdraw') }}">Para Çek</a></div>
+</div>
+
+
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Siparişlerim</div><div class="v">{{ stats.orders }}</div></div>
+  <div class="stat"><div class="k">Toplam harcama</div><div class="v">{{ stats.spent|money }}</div></div>
+  <div class="stat"><div class="k">Bekleyen yükleme</div><div class="v">{{ stats.pending_deposits }}</div></div>
+  <div class="stat"><div class="k">Bekleyen çekim</div><div class="v">{{ stats.pending_withdrawals }}</div></div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-h"><h3>Son siparişler</h3><a href="{{ url_for('orders') }}">Tümü</a></div>
+    {% if recent_orders %}<div class="table-wrap"><table>
+      <tr><th>No</th><th>İlan</th><th class="right">Tutar</th></tr>
+      {% for o in recent_orders %}<tr><td><a href="{{ url_for('order_detail', oid=o.id) }}">#{{ o.id }}</a></td><td>{{ o.listing_title }}</td><td class="right nowrap">{{ o.total|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Henüz siparişin yok') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Son hareketler</h3><a href="{{ url_for('transactions') }}">Tümü</a></div>
+    {% if recent_tx %}<div class="table-wrap"><table>
+      <tr><th>Tür</th><th class="right">Tutar</th></tr>
+      {% for t in recent_tx %}<tr><td>{{ t.kind|kindlabel }}<div class="muted small">{{ t.created_at|dt }}</div></td><td class="right nowrap {{ 'pos' if t.amount > 0 else 'neg' }}">{{ t.amount|smoney }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Henüz hareket yok') }}{% endif %}
+  </div>
+</div>
+{% endblock %}

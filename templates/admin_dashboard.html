@@ -1,0 +1,75 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import bars, badge, empty, ic, spark with context %}
+{% macro delta(cur, prev) %}{% if prev %}{% set p = ((cur - prev) * 100 / prev)|round|int %}<span class="delta {{ 'up' if p > 0 else ('down' if p < 0 else 'flat') }}">{{ '+' if p > 0 }}{{ p }}%</span>{% elif cur %}<span class="delta up">yeni</span>{% endif %}{% endmacro %}
+{% block heading %}Pano{% endblock %}
+{% block panel %}
+{% if demo_loaded %}<div class="notice warn">Demo veri yüklü. Vitrin dolu görünür ama ilanlar satın alınamaz. Canlıya çıkmadan önce <a href="{{ url_for('admin.system') }}">Sistem ve araçlar</a> sayfasından sil.</div>{% endif %}
+
+<div class="todo mb">
+  <a class="todo-i {{ 'hot' if pending.deposits }}" href="{{ url_for('admin.deposits') }}">{{ ic('download') }}<b>{{ pending.deposits }}</b><span>Bekleyen yükleme</span></a>
+  <a class="todo-i {{ 'hot' if pending.withdrawals }}" href="{{ url_for('admin.withdrawals') }}">{{ ic('upload') }}<b>{{ pending.withdrawals }}</b><span>Bekleyen çekim</span></a>
+  <a class="todo-i {{ 'hot' if pending.kyc }}" href="{{ url_for('admin.kyc') }}">{{ ic('id-card') }}<b>{{ pending.kyc }}</b><span>Kimlik onayı</span></a>
+  <a class="todo-i {{ 'hot' if pending.sellers }}" href="{{ url_for('admin.sellers') }}">{{ ic('store') }}<b>{{ pending.sellers }}</b><span>Satıcı başvurusu</span></a>
+  <a class="todo-i {{ 'hot' if pending.tickets }}" href="{{ url_for('admin.tickets') }}">{{ ic('life-buoy') }}<b>{{ pending.tickets }}</b><span>Açık destek</span></a>
+  <a class="todo-i {{ 'warn' if out_of_stock }}" href="{{ url_for('admin.listings', durum='active') }}">{{ ic('package') }}<b>{{ out_of_stock }}</b><span>Stoğu biten ilan</span></a>
+</div>
+
+<div class="kpis mb">
+  <div class="kpi"><div class="k">{{ ic('chart') }}Toplam ciro (GMV)</div><div class="v">{{ stats.gmv|money }}</div><div class="s">{{ stats.orders }} sipariş &middot; 7 gün {{ delta(week.gmv, week.prev_gmv) }}</div>{{ spark(chart_gmv|map(attribute='value')|list) }}</div>
+  <div class="kpi"><div class="k">{{ ic('percent') }}Komisyon geliri</div><div class="v ok">{{ stats.commission|money }}</div><div class="s">+ {{ stats.wd_fees|money }} çekim kesintisi &middot; + {{ stats.doping|money }} doping</div></div>
+  <div class="kpi"><div class="k">{{ ic('wallet') }}Kullanıcı bakiyeleri</div><div class="v warn">{{ stats.liabilities|money }}</div><div class="s">Platformun yükümlülüğü</div></div>
+  <div class="kpi"><div class="k">{{ ic('download') }}Onaylı yüklemeler</div><div class="v">{{ stats.deposited|money }}</div><div class="s">Ödenen çekim {{ stats.paid_out|money }}</div>{{ spark(chart_dep|map(attribute='value')|list) }}</div>
+</div>
+<div class="kpis mb">
+  <div class="kpi"><div class="k">{{ ic('users') }}Kullanıcı</div><div class="v">{{ stats.users }}</div><div class="s">Bugün +{{ stats.new_today }} &middot; 7 gün {{ delta(week.users, week.prev_users) }} &middot; {{ stats.banned }} engelli</div></div>
+  <div class="kpi"><div class="k">{{ ic('store') }}Satıcı</div><div class="v">{{ stats.sellers }}</div></div>
+  <div class="kpi"><div class="k">{{ ic('tag') }}Aktif ilan</div><div class="v">{{ stats.listings }}</div><div class="s">{{ stats.stock_codes }} kod stokta</div></div>
+  <div class="kpi"><div class="k">{{ ic('life-buoy') }}Destek / yorum</div><div class="v">{{ stats.open_tickets }} / {{ stats.reviews }}</div><div class="s">açık talep / yayındaki yorum</div></div>
+  <div class="kpi"><div class="k">{{ ic('ticket') }}Kupon / banner</div><div class="v">{{ week.coupons }} / {{ week.banners }}</div><div class="s">İndirim maliyeti {{ week.discounts|money }}</div></div>
+</div>
+
+<div class="two-col mb">
+  <div class="card"><div class="card-h"><h3>Ciro, son 14 gün</h3><a class="small" href="{{ url_for('admin.reports') }}">Raporlar</a></div>{{ bars(chart_gmv, true) }}</div>
+  <div class="card"><div class="card-h"><h3>Yeni üye, son 14 gün</h3></div>{{ bars(chart_users) }}</div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <div class="card-h"><h3>Kategori performansı</h3><span class="small muted">Son 30 gün</span></div>
+    {% if top_cats %}{% set peak = top_cats[0].gmv or 1 %}
+      {% for c in top_cats %}<div class="hbar"><span>{{ c.name }}</span><div class="meter"><i style="width:{{ (c.gmv * 100 / peak)|round|int }}%;background:{{ c.color or '#7c5cff' }}"></i></div><b>{{ c.gmv|money }}</b></div>{% endfor %}
+    {% else %}{{ empty('Henüz satış yok') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Açık destek talepleri</h3><a class="small" href="{{ url_for('admin.tickets') }}">Tümü</a></div>
+    {% if recent_tickets %}<div class="table-wrap"><table>
+      <tr><th>No</th><th>Konu</th><th>Kullanıcı</th><th>Öncelik</th></tr>
+      {% for t in recent_tickets %}<tr><td><a href="{{ url_for('admin.ticket', tid=t.id) }}">#{{ t.id }}</a></td><td>{{ t.subject[:34] }}{% if t.last_reply_by == 'user' %} <span class="badge b-warn">Yanıt bekliyor</span>{% endif %}</td><td>{{ t.username }}</td><td><span class="badge b-{{ t.priority|pclass }}">{{ t.priority|plabel }}</span></td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Açık talep yok') }}{% endif %}
+  </div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <div class="card-h"><h3>Son siparişler</h3><a class="small" href="{{ url_for('admin.orders') }}">Tümü</a></div>
+    {% if recent_orders %}<div class="table-wrap"><table>
+      <tr><th>No</th><th>İlan</th><th>Alıcı</th><th class="right">Tutar</th></tr>
+      {% for o in recent_orders %}<tr><td>#{{ o.id }}</td><td>{{ o.listing_title[:30] }}<div class="muted small">{{ o.seller_name }}{{ pkg_marks(o.seller_id) }}</div></td><td>{{ o.buyer_name }}</td><td class="right nowrap">{{ o.total|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Henüz sipariş yok') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Yeni üyeler</h3><div class="row"><a class="small" href="{{ url_for('admin.user_new') }}">Üye oluştur</a><a class="small" href="{{ url_for('admin.users') }}">Tümü</a></div></div>
+    <div class="table-wrap"><table>
+      <tr><th>Kullanıcı</th><th>Kimlik</th><th>Kayıt</th></tr>
+      {% for u in recent_users %}<tr><td><a href="{{ url_for('admin.user', uid=u.id) }}">{{ u.username }}</a>{{ pkg_marks(u.id) }}<div class="muted small trunc">{{ u.email }}</div></td><td>{{ badge(u.kyc_status) }}</td><td class="nowrap">{{ u.created_at|ago }}</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h3>Son yönetici işlemleri</h3><a class="small" href="{{ url_for('admin.log') }}">Günlük</a></div>
+  {% if recent_log %}<div class="table-wrap"><table>
+    {% for l in recent_log %}<tr><td><b>{{ l.action }}</b><div class="muted small">{{ l.detail[:90] }}</div></td><td class="nowrap muted small right">{{ l.created_at|dt }}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Kayıt yok') }}{% endif %}
+</div>
+{% endblock %}

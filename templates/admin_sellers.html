@@ -1,0 +1,28 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import badge, pager, empty, status_tabs %}
+{% block title %}Satıcı Başvuruları{% endblock %}
+{% block heading %}Satıcı başvuruları{% endblock %}
+{% block panel %}
+{{ status_tabs('admin.sellers', status, counts) }}
+{% if page.rows %}
+<div class="grid" style="gap:14px">
+  {% for a in page.rows %}
+  <div class="card">
+    <div class="spread mb">
+      <div><h3 style="margin:0">{{ a.store_name }}</h3><span class="muted small">Başvuran: <a href="{{ url_for('admin.user', uid=a.user_id) }}">{{ a.username }}</a> &middot; {{ a.email }} &middot; {{ a.created_at|dt }}</span></div>
+      <div class="row">{{ badge(a.status) }}<span class="badge b-{{ a.kyc_status|sclass }}">Kimlik: {{ a.kyc_status|slabel }}</span></div>
+    </div>
+    <div class="pre">{{ a.description }}</div>
+    {% if a.experience %}<p class="muted small mt"><b>Deneyim:</b> {{ a.experience }}</p>{% endif %}
+    {% if a.admin_note %}<p class="muted small"><b>Yönetici notu:</b> {{ a.admin_note }}</p>{% endif %}
+    {% if a.status == 'pending' %}
+    <form method="post" action="{{ url_for('admin.seller_action', aid=a.id) }}" class="mini-form mt" style="justify-content:flex-start">{{ csrf_field() }}
+      <input type="text" name="note" placeholder="Not (reddederken kullanıcıya gösterilir)" maxlength="300" style="width:280px">
+      <button class="btn btn-ok btn-sm" name="action" value="approve" type="submit" data-confirm="Başvuru onaylansın mı?">Onayla</button>
+      <button class="btn btn-danger btn-sm" name="action" value="reject" type="submit" data-confirm="Başvuru reddedilsin mi?">Reddet</button>
+    </form>{% endif %}
+  </div>
+  {% endfor %}
+</div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Bu durumda başvuru yok') }}</div>{% endif %}
+{% endblock %}

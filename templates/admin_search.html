@@ -1,0 +1,38 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import badge, empty, ic with context %}
+{% block heading %}Arama{% endblock %}
+{% block panel %}
+<div class="page-h"><div><div class="crumb">Global arama</div><h1>"{{ text }}" için {{ total }} sonuç</h1></div></div>
+{% if not text %}<div class="card">{{ empty('Bir arama terimi gir', 'Kullanıcı adı, e-posta, ID, ilan başlığı, sipariş no, destek konusu veya IP arayabilirsin.') }}</div>{% endif %}
+{% if res.users %}
+<div class="res-h"><h3>{{ ic('users') }} Kullanıcılar</h3></div>
+<div class="table-wrap"><table>
+  {% for u in res.users %}<tr><td>#{{ u.id }}</td><td><a href="{{ url_for('admin.user', uid=u.id) }}"><b>{{ u.username }}</b></a>{{ pkg_marks(u.id) }}<div class="muted small">{{ u.email }}</div></td><td>{% if u.is_seller %}<span class="badge b-ok">Satıcı</span>{% endif %} {% if u.is_banned %}<span class="badge b-bad">Engelli</span>{% endif %}</td><td class="right nowrap">{{ u.balance|money }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% if res.listings %}
+<div class="res-h"><h3>{{ ic('tag') }} İlanlar</h3></div>
+<div class="table-wrap"><table>
+  {% for l in res.listings %}<tr><td>#{{ l.id }}</td><td><a href="{{ url_for('admin.listing_edit', lid=l.id) }}"><b>{{ l.title[:60] }}</b></a><div class="muted small">{{ l.cat_name }} &middot; {{ l.seller_name }}{{ pkg_marks(l.seller_id) }}</div></td><td>{{ badge(l.status) }}</td><td class="right nowrap">{{ l.price|money }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% if res.orders %}
+<div class="res-h"><h3>{{ ic('receipt') }} Siparişler</h3></div>
+<div class="table-wrap"><table>
+  {% for o in res.orders %}<tr><td>#{{ o.id }}</td><td>{{ o.listing_title[:50] }}<div class="muted small">{{ o.buyer_name }} - {{ o.seller_name }}{{ pkg_marks(o.seller_id) }}</div></td><td class="nowrap muted">{{ o.created_at|dt }}</td><td class="right nowrap">{{ o.total|money }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% if res.tickets %}
+<div class="res-h"><h3>{{ ic('life-buoy') }} Destek talepleri</h3></div>
+<div class="table-wrap"><table>
+  {% for t in res.tickets %}<tr><td><a href="{{ url_for('admin.ticket', tid=t.id) }}">#{{ t.id }}</a></td><td>{{ t.subject[:60] }}<div class="muted small">{{ t.username }}</div></td><td><span class="badge b-{{ t.status|tclass }}">{{ t.status|tlabel }}</span></td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% if res.deposits %}
+<div class="res-h"><h3>{{ ic('download') }} Yüklemeler</h3></div>
+<div class="table-wrap"><table>
+  {% for d in res.deposits %}<tr><td>#{{ d.id }}</td><td>{{ d.username }}<div class="muted small">{{ d.reference[:60] }}</div></td><td>{{ badge(d.status) }}</td><td class="right nowrap">{{ d.amount|money }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% if text and not total %}<div class="card">{{ empty('Sonuç bulunamadı') }}</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, ic with context %}
+{% block title %}{{ gw.title }}{% endblock %}
+{% block content %}
+<div class="container section" style="max-width:860px">
+  <div class="crumbs"><a href="{{ url_for('community.giveaways') }}">Çekilişler</a> <span>/</span> <span>{{ gw.title }}</span></div>
+  <div class="card gw-detail">
+    <div class="gw-head">
+      <span class="gw-ico lg">{{ ic('gift') }}</span>
+      <div class="grow-1">
+        <span class="badge b-{{ status[1] }}">{{ status[0] }}</span>
+        <h1>{{ gw.title }}</h1>
+        <a class="row small" href="{{ url_for('storefront', username=gw.seller_name) }}">{{ avatar(gw.seller_name, gw.seller_avatar, 'sm') }}<b>{{ gw.store_name or gw.seller_name }}</b>{{ pkg_marks(gw.seller_id) }}</a>
+      </div>
+    </div>
+    <div class="gw-prize-box"><small>Ödül</small><b>{{ gw.prize }}</b></div>
+    {% if gw.description %}<p class="pre">{{ gw.description }}</p>{% endif %}
+    <div class="grid g3 mb">
+      <div class="stat"><div class="k">Katılımcı</div><div class="v">{{ gw.entry_count }}</div></div>
+      <div class="stat"><div class="k">Kazanan sayısı</div><div class="v">{{ gw.winners }}</div></div>
+      <div class="stat"><div class="k">{{ 'Kalan süre' if gw.status == 'open' else 'Bitiş' }}</div><div class="v" style="font-size:1.15rem">{{ left if gw.status == 'open' else (gw.drawn_at or gw.ends_at)|dt }}</div></div>
+    </div>
+    <ul class="gw-rules">
+      <li>{{ ic('check-circle') }}Kazananlar kura ile, sistem tarafından rastgele belirlenir.</li>
+      {% if gw.need_follow %}<li>{{ ic('check-circle') }}Katılmak için mağazayı takip etmek gerekir.</li>{% endif %}
+      {% if gw.need_purchase %}<li>{{ ic('check-circle') }}Yalnızca bu mağazadan alışveriş yapmış üyeler katılabilir.</li>{% endif %}
+      <li>{{ ic('check-circle') }}Bitiş: {{ gw.ends_at|dt }}. Kazananlara bildirim gönderilir; ödül satıcı tarafından teslim edilir.</li>
+    </ul>
+
+    {% if gw.status == 'drawn' %}
+      <h3>Kazananlar</h3>
+      {% if winners %}<div class="row">{% for w in winners %}<span class="chip">{{ ic('trophy') }}{{ w.username|mask }}{% if me and me.id == w.id %} (sen){% endif %}</span>{% endfor %}</div>
+      {% else %}<p class="muted">Bu çekilişe uygun katılım olmadı.</p>{% endif %}
+      {% if won %}<div class="notice ok mt">Tebrikler, çekilişi kazandın. Ödülünü almak için satıcıyla mesajlaşabilirsin.</div>{% endif %}
+    {% elif gw.status == 'cancelled' %}
+      <div class="notice bad">Bu çekiliş iptal edildi.</div>
+    {% elif is_owner %}
+      <div class="notice">Bu senin çekilişin. Yönetmek için <a href="{{ url_for('seller.giveaways') }}">Çekilişlerim</a> sayfasına git.</div>
+    {% elif entered %}
+      <div class="notice ok">Bu çekilişe katıldın. Bol şans!</div>
+      <form method="post" action="{{ url_for('community.giveaway_leave', gid=gw.id) }}" data-confirm="Çekilişten ayrılmak istiyor musun?">{{ csrf_field() }}<button class="btn btn-line btn-sm" type="submit">Katılımı geri çek</button></form>
+    {% elif not me %}
+      <a class="btn btn-lg" href="{{ url_for('login', next=request.path) }}">Katılmak için giriş yap</a>
+    {% elif ok %}
+      <form method="post" action="{{ url_for('community.giveaway_join', gid=gw.id) }}" class="row">
+        {{ csrf_field() }}
+        {% if gw.need_follow and not follows %}<input type="hidden" name="follow" value="1">{% endif %}
+        <button class="btn btn-lg shine" type="submit">{{ ic('gift') }}{{ 'Takip et ve katıl' if gw.need_follow and not follows else 'Çekilişe katıl' }}</button>
+      </form>
+    {% else %}
+      <div class="notice warn">{{ why }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager, empty, ic with context %}
+{% block title %}Bildirimler{% endblock %}
+{% block content %}
+<div class="container section" style="max-width:860px">
+  <div class="page-h"><h1>{{ ic('bell') }} Bildirimler</h1><div class="row">
+    {% if unread %}<form method="post" action="{{ url_for('site.notif_read_all') }}">{{ csrf_field() }}<button class="btn btn-ghost btn-sm" type="submit">Tümünü okundu say ({{ unread }})</button></form>{% endif %}
+    <button type="button" class="btn btn-ghost btn-sm" data-notif-enable>Tarayıcı bildirimini aç</button><button type="button" class="btn btn-ghost btn-sm" data-sound-toggle>Ses: Açık</button></div></div>
+  <div class="tabs">
+    <a class="{{ 'on' if not flt }}" href="{{ url_for('site.notifications') }}">Hepsi</a>
+    <a class="{{ 'on' if flt == 'okunmamis' }}" href="{{ url_for('site.notifications', durum='okunmamis') }}">Okunmamış</a>
+    {% for k, v in kinds.items() %}<a class="{{ 'on' if flt == k }}" href="{{ url_for('site.notifications', durum=k) }}">{{ v }}</a>{% endfor %}
+  </div>
+  <div class="card tight">
+    {% for n in items %}
+    <a class="notif-row {{ 'unread' if not n.is_read }} nk-{{ n.kind }}" href="{{ url_for('site.notif_view', nid=n.id) }}">
+      <span class="ti">{{ ic('check-circle' if n.kind == 'ok' else ('alert' if n.kind in ('bad', 'warn') else 'bell')) }}</span>
+      <span class="grow-1"><b>{{ n.title }}</b>{% if n.body %}<span class="muted small d-block notif-snip">{{ n.body }}</span>{% endif %}</span>
+      <span class="nk-tag nk-{{ n.kind }}">{{ kinds[n.kind] }}</span>
+      <span class="dim small nowrap">{{ n.created_at|ago }}</span>
+    </a>
+    {% else %}{{ empty('Bildirimin yok', 'Sipariş, destek ve hesap hareketleri burada görünür.') }}{% endfor %}
+  </div>
+  {{ pager(page) }}
+</div>
+{% endblock %}

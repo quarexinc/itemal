@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block body_class %} class="app"{% endblock %}
+{% block head_extra %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block site_header %}{% endblock %}
+{% block site_footer %}{% endblock %}
+{% block title %}{% block heading %}Pano{% endblock %}{% endblock %}
+{% block content %}
+{% set ep = request.endpoint or '' %}
+<div class="admin-shell">
+  <aside class="a-side" id="aside">
+    <a class="brand" href="{{ url_for('admin.dashboard') }}"><img class="brand-mark" src="{{ url_for('static', filename='logo.svg') }}" width="32" height="32" alt="">{{ site_name }} <span class="tag-admin">ADMIN</span></a>
+    <div class="sep">Genel</div>
+    <a class="{{ 'on' if ep == 'admin.dashboard' }}" href="{{ url_for('admin.dashboard') }}">{{ ic('grid') }}<span>Pano</span></a>
+    <a class="{{ 'on' if ep == 'admin.reports' }}" href="{{ url_for('admin.reports') }}">{{ ic('chart') }}<span>Raporlar</span></a>
+    <a class="{{ 'on' if ep == 'admin.finance' }}" href="{{ url_for('admin.finance') }}">{{ ic('wallet') }}<span>Finans ve kasa</span></a>
+    <a class="{{ 'on' if ep == 'admin.feed' }}" href="{{ url_for('admin.feed') }}">{{ ic('history') }}<span>Canlı akış</span></a>
+    <div class="sep">Onay bekleyenler</div>
+    <a class="{{ 'on' if ep == 'admin.deposits' }}" href="{{ url_for('admin.deposits') }}">{{ ic('download') }}<span>Bakiye yüklemeleri</span>{% if pending.deposits %}<span class="cnt">{{ pending.deposits }}</span>{% endif %}</a>
+    <a class="{{ 'on' if ep == 'admin.admin_paylinks' }}" href="{{ url_for('admin.admin_paylinks') }}">{{ ic('link') }}<span>Ödeme linkleri</span></a>
+    <a class="{{ 'on' if ep == 'admin.complaints' }}" href="{{ url_for('admin.complaints') }}">{{ ic('flag') }}<span>Şikayetler</span>{% if pending.reports %}<span class="cnt">{{ pending.reports }}</span>{% endif %}</a>
+    <a class="{{ 'on' if ep == 'admin.withdrawals' }}" href="{{ url_for('admin.withdrawals') }}">{{ ic('upload') }}<span>Çekim talepleri</span>{% if pending.withdrawals %}<span class="cnt">{{ pending.withdrawals }}</span>{% endif %}</a>
+    <a class="{{ 'on' if ep == 'admin.kyc' }}" href="{{ url_for('admin.kyc') }}">{{ ic('id-card') }}<span>Kimlik onayları</span>{% if pending.kyc %}<span class="cnt">{{ pending.kyc }}</span>{% endif %}</a>
+    <a class="{{ 'on' if ep == 'admin.sellers' }}" href="{{ url_for('admin.sellers') }}">{{ ic('store') }}<span>Satıcı başvuruları</span>{% if pending.sellers %}<span class="cnt">{{ pending.sellers }}</span>{% endif %}</a>
+    <a class="{{ 'on' if ep in ['admin.tickets', 'admin.ticket'] }}" href="{{ url_for('admin.tickets') }}">{{ ic('life-buoy') }}<span>Destek talepleri</span>{% if pending.tickets %}<span class="cnt">{{ pending.tickets }}</span>{% endif %}</a>
+    <div class="sep">Yönetim</div>
+    <a class="{{ 'on' if ep in ['admin.users', 'admin.user', 'admin.user_new'] }}" href="{{ url_for('admin.users') }}">{{ ic('users') }}<span>Kullanıcılar</span></a>
+    <a class="{{ 'on' if ep == 'admin.stores' }}" href="{{ url_for('admin.stores') }}">{{ ic('store') }}<span>Mağazalar</span></a>
+    <a class="{{ 'on' if ep in ['admin.listings', 'admin.listing_new', 'admin.listing_edit'] }}" href="{{ url_for('admin.listings') }}">{{ ic('tag') }}<span>İlanlar</span></a>
+    <a class="{{ 'on' if ep == 'admin.orders' }}" href="{{ url_for('admin.orders') }}">{{ ic('receipt') }}<span>Siparişler</span></a>
+    <a class="{{ 'on' if ep == 'admin.reviews' }}" href="{{ url_for('admin.reviews') }}">{{ ic('star') }}<span>Yorumlar</span></a>
+    <a class="{{ 'on' if ep == 'admin.seller_comments' }}" href="{{ url_for('admin.seller_comments') }}">{{ ic('message') }}<span>Mağaza yorumları</span></a>
+    <a class="{{ 'on' if ep in ['admin.chats', 'admin.chat'] }}" href="{{ url_for('admin.chats') }}">{{ ic('message') }}<span>Sohbet denetimi</span></a>
+    <a class="{{ 'on' if ep == 'admin.transactions' }}" href="{{ url_for('admin.transactions') }}">{{ ic('database') }}<span>İşlem defteri</span></a>
+    <div class="sep">Vitrin ve pazarlama</div>
+    <a class="{{ 'on' if ep in ['admin.banners', 'admin.banner_edit'] }}" href="{{ url_for('admin.banners') }}">{{ ic('image') }}<span>Bannerlar</span></a>
+    <a class="{{ 'on' if ep == 'admin.doping' }}" href="{{ url_for('admin.doping') }}">{{ ic('flame') }}<span>Doping</span></a>
+    <a class="{{ 'on' if ep == 'admin.giveaways_admin' }}" href="{{ url_for('admin.giveaways_admin') }}">{{ ic('gift') }}<span>Çekilişler</span></a>
+    <a class="{{ 'on' if ep == 'admin.coupons' }}" href="{{ url_for('admin.coupons') }}">{{ ic('ticket') }}<span>Kuponlar</span></a>
+    <a class="{{ 'on' if ep == 'admin.packages' }}" href="{{ url_for('admin.packages') }}">{{ ic('award') }}<span>Paketler</span></a>
+    <a class="{{ 'on' if ep == 'admin.categories' }}" href="{{ url_for('admin.categories') }}">{{ ic('layers') }}<span>Kategoriler</span></a>
+    <a class="{{ 'on' if ep == 'admin.broadcast' }}" href="{{ url_for('admin.broadcast') }}">{{ ic('megaphone') }}<span>Duyuru gönder</span></a>
+    <div class="sep">Sistem</div>
+    <a class="{{ 'on' if ep == 'admin.commission' }}" href="{{ url_for('admin.commission') }}">{{ ic('percent') }}<span>Komisyon raporu</span></a>
+    <a class="{{ 'on' if ep == 'admin.payments' }}" href="{{ url_for('admin.payments') }}">{{ ic('credit-card') }}<span>Ödeme yöntemleri</span></a>
+    <a class="{{ 'on' if ep == 'admin.integration' }}" href="{{ url_for('admin.integration') }}">{{ ic('code') }}<span>Entegrasyon ve API</span></a>
+    <a class="{{ 'on' if ep == 'admin.site_settings' }}" href="{{ url_for('admin.site_settings') }}">{{ ic('settings') }}<span>Site ayarları</span></a>
+    <a class="{{ 'on' if ep == 'admin.system' }}" href="{{ url_for('admin.system') }}">{{ ic('server') }}<span>Sistem ve araçlar</span></a>
+    <a class="{{ 'on' if ep in ['admin.security_page', 'admin.setup'] }}" href="{{ url_for('admin.security_page') }}">{{ ic('shield-check') }}<span>Güvenlik</span></a>
+    <a class="{{ 'on' if ep == 'admin.log' }}" href="{{ url_for('admin.log') }}">{{ ic('history') }}<span>Yönetici günlüğü</span></a>
+  </aside>
+  <div class="a-main">
+    <div class="a-top">
+      <div class="row">
+        <button type="button" class="ibtn a-toggle" data-toggle-nav="#aside" aria-label="Menü">{{ ic('menu') }}</button>
+        <h1>{{ self.heading() }}</h1>
+      </div>
+      <div class="gsearch"><form action="{{ url_for('admin.search') }}" method="get" role="search">{{ ic('search') }}<input type="search" name="q" placeholder="Kullanıcı, ilan, sipariş, talep ara" maxlength="60" aria-label="Yönetim araması"></form></div>
+      <div class="row">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('index') }}" target="_blank" rel="noopener">{{ ic('external') }}Siteyi gör</a>
+        <form class="inline-form" method="post" action="{{ url_for('admin.logout') }}">{{ csrf_field() }}<button class="btn btn-line btn-sm" type="submit">{{ ic('logout') }}Çıkış</button></form>
+      </div>
+    </div>
+    {% if admsec %}
+      {% if admsec.alert %}<div class="notice bad"><b>Yeni cihazdan yönetici girişi:</b> {{ admsec.alert.at|dt }} &middot; {{ admsec.alert.why }} &middot; {{ admsec.alert.ip }} &middot; {{ admsec.alert.browser }}. Bu sen değilsen şifreni hemen değiştir ve giriş geçmişini incele.
+        <div class="row" style="margin-top:8px"><a class="btn btn-line btn-sm" href="{{ url_for('admin.security_page') }}">Giriş geçmişi</a><form class="inline-form" method="post" action="{{ url_for('admin.security_dismiss') }}">{{ csrf_field() }}<button class="btn btn-ghost btn-sm" type="submit">Bendim, uyarıyı kapat</button></form></div></div>{% endif %}
+      {% if admsec.tfa_warn %}<div class="notice warn">İki adımlı doğrulama kapalı. Yönetici hesabını korumak için <a href="{{ url_for('admin.security_page') }}">Güvenlik</a> sayfasından etkinleştir.</div>{% endif %}
+    {% endif %}
+    {% block panel %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

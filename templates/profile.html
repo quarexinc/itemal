@@ -1,0 +1,76 @@
+{% extends "account_base.html" %}
+{% from "_macros.html" import avatar, badge_list %}
+{% block title %}Profil ve Güvenlik{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Profil ve güvenlik</h1></div>
+<div class="card mb">
+  <div class="store-head">
+    {{ avatar(me.username, me.avatar, 'lg') }}
+    <div style="flex:1;min-width:240px">
+      <h2 style="margin-bottom:.2em">{{ me.username }}{{ pkg_marks(me.id) }}</h2>
+      <div class="muted small mb">{{ me.email }} &middot; Üyelik: {{ me.created_at|dt(false) }}</div>
+      {{ badge_list(my_badges) }}
+    </div>
+  </div>
+  <hr>
+  <form method="post" action="{{ url_for('profile') }}" enctype="multipart/form-data" class="row">
+    {{ csrf_field() }}<input type="hidden" name="action" value="avatar">
+    <div class="field" style="flex:1;min-width:240px;margin:0"><label for="avatar">Profil fotoğrafı</label><input type="file" id="avatar" name="avatar" accept="image/jpeg,image/png,image/webp" required></div>
+    <button class="btn btn-sm" type="submit">Yükle</button>
+  </form>
+  {% if me.avatar %}<form method="post" action="{{ url_for('profile') }}" class="mt">{{ csrf_field() }}<input type="hidden" name="action" value="avatar_remove"><button class="link-btn link-danger" type="submit">Fotoğrafı kaldır</button></form>{% endif %}
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <h3 class="mt0">İletişim</h3>
+    <form method="post" action="{{ url_for('profile') }}">
+      {{ csrf_field() }}<input type="hidden" name="action" value="phone">
+      <div class="field"><label for="phone">Telefon</label><input type="tel" id="phone" name="phone" value="{{ me.phone }}" maxlength="20" placeholder="+90 5xx xxx xx xx"></div>
+      <button class="btn btn-sm" type="submit">Kaydet</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3 class="mt0">Şifre değiştir</h3>
+    <form method="post" action="{{ url_for('profile') }}">
+      {{ csrf_field() }}<input type="hidden" name="action" value="password">
+      <div class="field"><label for="current">Mevcut şifre</label><input type="password" id="current" name="current" required autocomplete="current-password"></div>
+      <div class="field"><label for="new">Yeni şifre</label><input type="password" id="new" name="new" required minlength="8" autocomplete="new-password"></div>
+      <div class="field"><label for="new2">Yeni şifre (tekrar)</label><input type="password" id="new2" name="new2" required minlength="8" autocomplete="new-password"></div>
+      <button class="btn btn-sm" type="submit">Şifreyi Güncelle</button>
+    </form>
+  </div>
+</div>
+
+{% set sec = sec_summary() %}
+<div class="mt" id="guvenlik">
+  <div class="page-h"><h2>Güvenlik</h2></div>
+  <div class="two-col">
+    <div class="card">
+      <h3 class="mt0">İki adımlı doğrulama</h3>
+      <div class="sec-stat">
+        <span class="badge {{ 'b-ok' if sec.twofa else 'b-warn' }}">{{ 'Açık' if sec.twofa else 'Kapalı' }}</span>
+        {% if sec.twofa %}<span class="muted small">Kalan yedek kod: {{ sec.backups }}</span>{% endif %}
+      </div>
+      <p class="muted small">Girişte şifrene ek olarak doğrulama uygulamandaki (Google Authenticator, Authy vb.) 6 haneli kod istenir. Şifren çalınsa bile hesabına girilemez.{% if cfg.require_seller_2fa == '1' and not sec.twofa %} <b>Satıcı paneli için bu özellik zorunludur.</b>{% endif %}</p>
+      <a class="btn btn-sm" href="{{ url_for('accsec.twofa') }}">{{ 'Yönet' if sec.twofa else 'Etkinleştir' }}</a>
+    </div>
+    <div class="card">
+      <h3 class="mt0">Oturumlar</h3>
+      <p class="muted small">Başka bir cihazda açık kalan oturumların varsa ya da hesabından şüphelendiysen tüm cihazlardan çıkış yap. Bu cihazdaki oturumun açık kalır. Şifreni değiştirdiğinde de diğer oturumlar kapanır.</p>
+      <form method="post" action="{{ url_for('accsec.logout_all') }}" data-confirm="Diğer tüm cihazlardaki oturumlar kapatılsın mı?">{{ csrf_field() }}<button class="btn btn-sm btn-ghost" type="submit">Tüm cihazlardan çıkış yap</button></form>
+    </div>
+  </div>
+  <div class="card mt">
+    <h3 class="mt0">Son girişler</h3>
+    {% if sec.failed_24h %}<div class="notice warn small">Son 24 saatte hesabına {{ sec.failed_24h }} başarısız giriş denemesi yapıldı. Sen yapmadıysan şifreni değiştir ve iki adımlı doğrulamayı aç.</div>{% endif %}
+    {% if sec.events %}
+    <div class="table-wrap"><table class="sec-table">
+      <tr><th>Tarih</th><th>IP</th><th>Tarayıcı</th></tr>
+      {% for e in sec.events %}<tr><td>{{ e.created_at|dt }}</td><td>{{ e.ip|maskip }}</td><td>{{ e.agent|uasum }}</td></tr>{% endfor %}
+    </table></div>
+    {% else %}<p class="muted small">Henüz giriş kaydı yok.</p>{% endif %}
+    <p class="muted small mt">IP adresleri güvenlik için kısmen gizlenir. Tanımadığın bir giriş görürsen şifreni değiştir.</p>
+  </div>
+</div>
+{% endblock %}

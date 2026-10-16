@@ -1,0 +1,145 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import badge, avatar, badge_list, rating_line, empty, ic with context %}
+{% block title %}{{ u.username }}{% endblock %}
+{% block heading %}Kullanıcı: {{ u.username }}{% endblock %}
+{% block panel %}
+<div class="card mb">
+  <div class="store-head">
+    {{ avatar(u.username, u.avatar, 'lg') }}
+    <div style="flex:1;min-width:260px">
+      <h2 style="margin-bottom:.2em">{{ u.store_name or u.username }}{{ pkg_marks(u.id) }} <span class="muted small">#{{ u.id }}</span></h2>
+      <div class="muted small mb">{{ u.email }}{% if u.phone %} &middot; {{ u.phone }}{% endif %} &middot; Kayıt: {{ u.created_at|dt }} &middot; Son giriş: {{ u.last_login|dt if u.last_login else '-' }}</div>
+      <div class="row mb">{% if u.is_seller %}<span class="badge b-ok">Satıcı</span>{% endif %}{% if u.is_banned %}<span class="badge b-bad">Engelli</span>{% endif %}<span class="badge b-{{ u.kyc_status|sclass }}">Kimlik: {{ u.kyc_status|slabel }}</span>{% if u.is_seller %}{{ rating_line(seller_stats.rating, seller_stats.reviews) }}{% endif %}</div>
+      {{ badge_list(badges) }}
+      <a class="btn btn-sm" href="#bakiye">Bakiye ekle</a>
+    </div>
+    <div class="right"><div class="muted small">Bakiye</div><div style="font-size:1.8rem;font-weight:800">{{ u.balance|money }}</div><div class="muted small">Çekilebilir: {{ withdrawable|money }}</div></div>
+  </div>
+</div>
+
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Alışlar</div><div class="v">{{ stats.buys }}</div><div class="s">{{ stats.spent|money }}</div></div>
+  <div class="stat"><div class="k">Satışlar</div><div class="v">{{ stats.sold }}</div><div class="s">Net {{ stats.earned|money }} &middot; komisyon {{ stats.fees|money }}</div></div>
+  <div class="stat"><div class="k">Yükleme / Çekim</div><div class="v" style="font-size:1.2rem">{{ stats.deposited|money }}</div><div class="s">Çekilen: {{ stats.withdrawn|money }}</div></div>
+  <div class="stat"><div class="k">İlan / Talep / API</div><div class="v">{{ stats.listings }} / {{ stats.tickets }} / {{ stats.api_keys }}</div></div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <h3 class="mt0">Hesap işlemleri</h3>
+    <div class="row mb">
+      {% if u.is_banned %}
+      <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}">{{ csrf_field() }}<input type="hidden" name="action" value="unban"><button class="btn btn-ok btn-sm" type="submit">Engeli kaldır</button></form>
+      {% else %}
+      <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}" class="mini-form" data-confirm="Kullanıcı engellensin mi? İlanları yayından kalkar.">{{ csrf_field() }}<input type="hidden" name="action" value="ban"><input type="text" name="reason" placeholder="Gerekçe" maxlength="200"><button class="btn btn-danger btn-sm" type="submit">Engelle</button></form>
+      {% endif %}
+      {% if u.is_seller %}
+      <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}" data-confirm="Satıcı yetkisi alınsın mı? Aktif ilanlar duraklatılır.">{{ csrf_field() }}<input type="hidden" name="action" value="seller_off"><button class="btn btn-line btn-sm" type="submit">Satıcı yetkisini al</button></form>
+      {% else %}
+      <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}">{{ csrf_field() }}<input type="hidden" name="action" value="seller_on"><button class="btn btn-ghost btn-sm" type="submit">Satıcı yap</button></form>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}" data-confirm="Yeni geçici şifre üretilsin mi? Mevcut şifre geçersiz olur.">{{ csrf_field() }}<input type="hidden" name="action" value="reset_pw"><button class="btn btn-line btn-sm" type="submit">Şifre sıfırla</button></form>
+      <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}" data-confirm="Kimlik durumu sıfırlansın mı?">{{ csrf_field() }}<input type="hidden" name="action" value="kyc_reset"><button class="btn btn-line btn-sm" type="submit">Kimliği sıfırla</button></form>
+      {% if u.avatar %}<form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}" data-confirm="Profil fotoğrafı kaldırılsın mı?">{{ csrf_field() }}<input type="hidden" name="action" value="avatar_remove"><button class="btn btn-line btn-sm" type="submit">Fotoğrafı kaldır</button></form>{% endif %}
+    </div>
+    <hr>
+    <h3 id="bakiye">Bakiye ekle / düzenle</h3>
+    <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}" data-confirm="Bakiye işlemi uygulansın mı?">
+      {{ csrf_field() }}<input type="hidden" name="action" value="balance">
+      <div class="form-row">
+        <div class="field"><label>İşlem</label><select name="type"><option value="add">Bakiye ekle (çekilemez)</option><option value="bonus">Kazanç ekle (çekilebilir)</option><option value="sub">Bakiye düş</option></select></div>
+        <div class="field"><label>Tutar (TL)</label><input type="text" inputmode="decimal" name="amount" required></div>
+      </div>
+      <div class="field"><label>Gerekçe</label><input type="text" name="reason" required maxlength="200"></div>
+      <button class="btn btn-sm" type="submit">Uygula</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3 class="mt0">Komisyon ve rozetler</h3>
+    <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}" class="mb">
+      {{ csrf_field() }}<input type="hidden" name="action" value="commission">
+      <div class="field"><label>Satıcıya özel komisyon oranı (%)</label>
+        <div class="row" style="flex-wrap:nowrap"><input type="text" inputmode="decimal" name="rate" value="{{ u.commission_rate if u.commission_rate is not none else '' }}" placeholder="Boş: kategori/genel oran (genel %{{ eff_rate }})"><button class="btn btn-sm" type="submit">Kaydet</button></div>
+        <div class="hint">Doluysa bu satıcı için kategori ve genel orandan önce uygulanır (0-50).</div></div>
+    </form>
+    <hr>
+    <h3>Elle verilen rozetler</h3>
+    <div class="grid" style="gap:8px">
+      {% for key in manual_badges %}
+      <div class="spread"><span class="bd {{ BADGES[key][1] }}" title="{{ BADGES[key][2] }}">{{ BADGES[key][0] }}</span>
+        <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}">{{ csrf_field() }}<input type="hidden" name="badge" value="{{ key }}">
+          {% if key in manual %}<input type="hidden" name="action" value="badge_remove"><button class="btn btn-line btn-sm" type="submit">Kaldır</button>
+          {% else %}<input type="hidden" name="action" value="badge_add"><button class="btn btn-ghost btn-sm" type="submit">Ver</button>{% endif %}</form></div>
+      {% endfor %}
+    </div>
+    <p class="muted small mt">"Kimliği Doğrulandı" ve "Onaylı Satıcı" otomatik verilir; "Güvenilir Satıcı" performansa göre otomatik ya da elle verilebilir.</p>
+  </div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <h3 class="mt0">Kimlik başvurusu</h3>
+    {% if kyc %}<dl class="kv">
+      <dt>Durum</dt><dd>{{ badge(kyc.status) }}</dd><dt>Ad soyad</dt><dd>{{ kyc.full_name }}</dd><dt>T.C. no</dt><dd class="mono">{{ kyc.id_number }}</dd><dt>Doğum tarihi</dt><dd>{{ kyc.birth_date }}</dd><dt>Tarih</dt><dd>{{ kyc.created_at|dt }}</dd>{% if kyc.admin_note %}<dt>Not</dt><dd>{{ kyc.admin_note }}</dd>{% endif %}
+    </dl><a class="btn btn-ghost btn-sm mt" href="{{ url_for('admin.kyc', durum='all') }}">Kimlik listesi</a>{% else %}<p class="muted">Başvuru yok.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3 class="mt0">Satıcı başvurusu</h3>
+    {% if application %}<dl class="kv"><dt>Durum</dt><dd>{{ badge(application.status) }}</dd><dt>Mağaza adı</dt><dd>{{ application.store_name }}</dd><dt>Tarih</dt><dd>{{ application.created_at|dt }}</dd></dl>{% else %}<p class="muted">Başvuru yok.</p>{% endif %}
+  </div>
+</div>
+
+<div class="two-col mb">
+  <div class="card">
+    <h3 class="mt0">Yönetici notu</h3>
+    <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}">
+      {{ csrf_field() }}<input type="hidden" name="action" value="note">
+      <div class="field"><textarea name="admin_note" maxlength="1000" placeholder="Yalnızca yöneticiler görür" style="min-height:90px">{{ u.admin_note }}</textarea></div>
+      <button class="btn btn-sm" type="submit">Notu kaydet</button>
+    </form>
+    <hr>
+    <h3>Bildirim gönder</h3>
+    <form method="post" action="{{ url_for('admin.user_action', uid=u.id) }}">
+      {{ csrf_field() }}<input type="hidden" name="action" value="notify">
+      <div class="field"><input type="text" name="title" maxlength="100" placeholder="Başlık" required></div>
+      <div class="field"><input type="text" name="body" maxlength="280" placeholder="Metin (isteğe bağlı)"></div>
+      <button class="btn btn-ghost btn-sm" type="submit">Gönder</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3 class="mt0">Güvenlik ve IP kayıtları</h3>
+    <dl class="kv"><dt>Kayıt IP</dt><dd class="mono small">{{ u.reg_ip or '-' }}</dd><dt>Son IP</dt><dd class="mono small">{{ u.last_ip or '-' }}</dd></dl>
+    {% if same_ip %}<div class="notice warn mt">Aynı IP'yi kullanan diğer hesaplar:
+      {% for o in same_ip %}<a href="{{ url_for('admin.user', uid=o.id) }}">{{ o.username }}</a>{% if o.is_banned %} (engelli){% endif %}{{ ', ' if not loop.last }}{% endfor %}</div>{% endif %}
+    {% if events %}<div class="table-wrap mt"><table>
+      <tr><th>Giriş</th><th>IP</th><th>Tarayıcı</th></tr>
+      {% for e in events %}<tr><td class="nowrap small">{{ e.created_at|ago }}</td><td class="mono small">{{ e.ip }}</td><td class="small muted">{{ e.agent[:38] }}</td></tr>{% endfor %}
+    </table></div>{% else %}<p class="muted small mt">Giriş kaydı yok.</p>{% endif %}
+  </div>
+</div>
+
+<div class="card mb">
+  <div class="card-h"><h3>Son hareketler</h3></div>
+  {% if txs %}<div class="table-wrap"><table>
+    <tr><th>Tarih</th><th>Tür</th><th>Açıklama</th><th class="right">Tutar</th><th class="right">Bakiye</th></tr>
+    {% for t in txs %}<tr><td class="nowrap">{{ t.created_at|dt }}</td><td>{{ t.kind|kindlabel }}</td><td class="muted">{{ t.description }}</td><td class="right nowrap {{ 'pos' if t.amount > 0 else 'neg' }}">{{ t.amount|smoney }}</td><td class="right nowrap">{{ t.balance_after|money }}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Hareket yok') }}{% endif %}
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-h"><h3>Son siparişler</h3></div>
+    {% if orders %}<div class="table-wrap"><table>
+      <tr><th>No</th><th>İlan</th><th>Rol</th><th class="right">Tutar</th></tr>
+      {% for o in orders %}<tr><td>#{{ o.id }}</td><td>{{ o.listing_title[:34] }}</td><td>{{ 'Alıcı' if o.buyer_id == u.id else 'Satıcı' }}</td><td class="right nowrap">{{ o.total|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Sipariş yok') }}{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>İlanları</h3></div>
+    {% if lst %}<div class="table-wrap"><table>
+      <tr><th>İlan</th><th class="right">Stok</th><th>Durum</th><th></th></tr>
+      {% for l in lst %}<tr><td>{{ l.title[:34] }}</td><td class="right">{{ l.stock }}</td><td>{{ badge(l.status) }}</td><td class="actions"><a class="btn btn-ghost btn-sm" href="{{ url_for('admin.listing_edit', lid=l.id) }}">Düzenle</a></td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('İlan yok') }}{% endif %}
+  </div>
+</div>
+{% endblock %}

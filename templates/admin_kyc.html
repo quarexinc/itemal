@@ -1,0 +1,67 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import badge, pager, empty, status_tabs %}
+{% block title %}Kimlik Onayları{% endblock %}
+{% block heading %}Kimlik onayları{% endblock %}
+{% block panel %}
+{{ status_tabs('admin.kyc', status, counts) }}
+<div class="notice mb">Kimlik görselleri hassas kişisel veridir. Yalnızca doğrulama için incele, kaydetme veya paylaşma. Onaylamadan önce belgenin okunaklı olduğunu, bilgilerin belgeyle uyuştuğunu ve selfie'deki kişinin belge sahibi olduğunu doğrula.</div>
+{% if items %}
+{% for it in items %}{% set r = it.r %}
+<div class="card kyc-card">
+  <div class="spread mb">
+    <div>
+      <h3 style="margin:0">{{ r.full_name }}</h3>
+      <span class="muted small">Başvuru #{{ r.id }} &middot; <a href="{{ url_for('admin.user', uid=r.user_id) }}">{{ r.username }}</a> &middot; {{ r.email }} &middot; {{ r.created_at|dt }}</span>
+    </div>
+    <div class="row">{{ badge(r.status) }}<span class="badge b-muted">{{ 'Ehliyet' if r.doc_type == 'ehliyet' else 'Kimlik kartı' }}</span></div>
+  </div>
+
+  {% if it.flags or it.same_name or it.prev_rejects %}
+  <ul class="flag-list">
+    {% for f in it.flags %}<li>{{ f }}</li>{% endfor %}
+    {% if it.same_name %}<li>Aynı ad soyadla başka hesap(lar) başvurmuş: {{ it.same_name|join(', ') }}</li>{% endif %}
+    {% if it.prev_rejects %}<li>Bu kullanıcının daha önce reddedilmiş {{ it.prev_rejects }} kimlik başvurusu var.</li>{% endif %}
+  </ul>
+  {% endif %}
+
+  <div class="two-col" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:18px">
+    <dl class="kv" style="align-content:start">
+      <dt>Ad soyad</dt><dd>{{ r.full_name }}</dd>
+      <dt>Kimlik no</dt><dd class="mono">{{ r.id_number }}</dd>
+      <dt>Doğum tarihi</dt><dd>{{ r.birth_date }}</dd>
+      <dt>Telefon</dt><dd>{{ r.phone or '-' }}</dd>
+      <dt>Hesap açılışı</dt><dd>{{ r.user_created|dt }}</dd>
+      {% if r.reviewed_at %}<dt>İnceleme</dt><dd>{{ r.reviewed_at|dt }}</dd>{% endif %}
+      {% if r.checklist %}<dt>Kontroller</dt><dd>{{ r.checklist.replace('doc', 'belge').replace('data', 'bilgi').replace('face', 'yüz').replace(',', ', ') }}</dd>{% endif %}
+    </dl>
+    <div class="kyc-imgs">
+      <a href="{{ url_for('admin.kyc_file', kid=r.id, which='on') }}" data-zoom><img src="{{ url_for('admin.kyc_file', kid=r.id, which='on') }}" alt="Ön yüz" loading="lazy"><small>Ön yüz</small></a>
+      <a href="{{ url_for('admin.kyc_file', kid=r.id, which='arka') }}" data-zoom><img src="{{ url_for('admin.kyc_file', kid=r.id, which='arka') }}" alt="Arka yüz" loading="lazy"><small>Arka yüz</small></a>
+      <a href="{{ url_for('admin.kyc_file', kid=r.id, which='selfie') }}" data-zoom><img src="{{ url_for('admin.kyc_file', kid=r.id, which='selfie') }}" alt="Selfie" loading="lazy"><small>Belgeyle selfie</small></a>
+    </div>
+  </div>
+
+  {% if r.status == 'pending' %}
+  <form method="post" action="{{ url_for('admin.kyc_action', kid=r.id) }}" class="mt">
+    {{ csrf_field() }}
+    <div class="checks">
+      <label class="check"><input type="checkbox" name="chk_doc" value="1"> <span>Belge gerçek görünüyor, okunaklı ve süresi geçmemiş</span></label>
+      <label class="check"><input type="checkbox" name="chk_data" value="1"> <span>Ad soyad, kimlik no ve doğum tarihi belgeyle uyuşuyor</span></label>
+      <label class="check"><input type="checkbox" name="chk_face" value="1"> <span>Selfie'deki kişi belge sahibiyle eşleşiyor ve belge selfie'de net görünüyor</span></label>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="reason{{ r.id }}">Ret nedeni (reddederken)</label>
+        <select id="reason{{ r.id }}" name="reason"><option value="">Seçiniz</option>{% for x in reasons %}<option value="{{ x }}">{{ x }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="note{{ r.id }}">Not (kullanıcıya gösterilir)</label><input type="text" id="note{{ r.id }}" name="note" maxlength="300"></div>
+    </div>
+    <div class="row">
+      <button class="btn btn-ok" name="action" value="approve" type="submit" data-confirm="Kimlik onaylansın mı?">Onayla</button>
+      <button class="btn btn-danger" name="action" value="reject" type="submit" data-confirm="Kimlik başvurusu reddedilsin mi?">Reddet</button>
+    </div>
+  </form>
+  {% elif r.admin_note %}<p class="muted small mt"><b>Not:</b> {{ r.admin_note }}</p>{% endif %}
+</div>
+{% endfor %}
+{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Bu durumda kimlik başvurusu yok') }}</div>{% endif %}
+{% endblock %}

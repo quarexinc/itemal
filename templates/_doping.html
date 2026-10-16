@@ -1,0 +1,24 @@
+{% macro doping_picker(kinds, sel, balance, key) %}
+<fieldset class="doping" data-doping data-balance="{{ balance }}">
+  <legend>Doping (isteğe bağlı)</legend>
+  <p class="muted small dp-lead">İlanını öne çıkar: vitrinlerde ve ana sayfa reklam panosunda göster. Tutar yayınlama anında bakiyenden düşer; bakiye yetmezse ilan oluşturulmaz.</p>
+  <input type="hidden" name="req_key" value="{{ key }}">
+  {% for k in kinds %}
+  <div class="dp-kind">
+    <div class="dp-h"><b>{{ k.label }}</b><span class="muted small">{{ k.desc }}</span></div>
+    {% if k.options %}
+    <div class="dp-opts" role="radiogroup" aria-label="{{ k.label }} süresi">
+      <label class="dp-opt"><input type="radio" name="doping_{{ k.key }}" value="" data-price="0" {{ 'checked' if not sel[k.key] }}><span><b>Yok</b><small>Doping alma</small></span></label>
+      {% for o in k.options %}<label class="dp-opt"><input type="radio" name="doping_{{ k.key }}" value="{{ o.hours }}" data-price="{{ o.price }}" {{ 'checked' if sel[k.key] == o.hours }}><span><b>{{ o.label }}</b><small>{{ o.price|money }}</small></span></label>{% endfor %}
+    </div>
+    {% else %}<div class="muted small">Bu doping türü şu an satışta değil.</div>{% endif %}
+  </div>
+  {% endfor %}
+  <div class="dp-sum">
+    <div><small>Toplam doping tutarı</small><b data-doping-total>0,00 ₺</b></div>
+    <div><small>Mevcut bakiyen</small><b>{{ balance|money }}</b></div>
+    <div><small>Sonra kalan</small><b data-doping-left>{{ balance|money }}</b></div>
+  </div>
+  <div class="notice warn dp-warn" data-doping-warn hidden>Bakiyen bu doping tutarına yetmiyor. <a href="{{ url_for('balance') }}">Bakiye yükle</a> ya da seçimini küçült; yetersiz bakiyede ilan oluşturulmaz.</div>
+</fieldset>
+{% endmacro %}

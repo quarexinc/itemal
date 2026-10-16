@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, empty, listing_card, ic with context %}
+{% block title %}Takip ettiklerim{% endblock %}
+{% block content %}
+<div class="container section">
+  <div class="page-h"><h1>{{ ic('users') }} Takip ettiklerim</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('site.sellers') }}">Mağazalara göz at</a></div>
+  {% if rows %}
+  <div class="grid g3 mb">
+    {% for s in rows %}
+    <a class="seller-card" href="{{ url_for('storefront', username=s.username) }}">
+      {{ avatar(s.username, s.avatar, 'lg') }}
+      <div><b>{{ s.store_name or s.username }}{{ pkg_marks(s.id) }}</b><div class="muted small">{{ s.listings }} ilan &middot; {{ s.since|dt(false) }} tarihinden beri</div>{% if s.gws %}<span class="chip-s ok">{{ s.gws }} açık çekiliş</span>{% endif %}</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% if fresh %}<div class="section-h"><h2>Takip ettiklerinden yeni ilanlar</h2></div><div class="lgrid">{% for l in fresh %}{{ listing_card(l) }}{% endfor %}</div>{% endif %}
+  {% else %}<div class="card">{{ empty('Henüz kimseyi takip etmiyorsun', 'Mağaza sayfasındaki Takip et düğmesiyle yeni ilan ve çekilişlerden haberdar ol.') }}</div>{% endif %}
+</div>
+{% endblock %}

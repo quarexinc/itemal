@@ -1,0 +1,54 @@
+{% extends "account_base.html" %}
+{% block title %}İki Adımlı Doğrulama{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>İki adımlı doğrulama</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('profile') }}#guvenlik">Profil ve güvenlik</a></div>
+{% if codes %}
+<div class="card">
+  <h3 class="mt0">Yedek kodların</h3>
+  <div class="notice warn">Bu kodlar yalnızca <b>bir kez</b> gösterilir. Telefonuna erişemezsen her kod bir kere giriş yapmanı sağlar. Güvenli bir yere kaydet.</div>
+  <div class="backup-codes">{% for c in codes %}<code>{{ c }}</code>{% endfor %}</div>
+  <a class="btn btn-sm" href="{{ url_for('profile') }}#guvenlik">Kodları kaydettim</a>
+</div>
+{% elif enabled %}
+<div class="two-col">
+  <div class="card">
+    <h3 class="mt0">Yedek kodları yenile</h3>
+    <p class="muted small">Kalan yedek kod: <b>{{ backups }}</b>. Yenilersen eskileri geçersiz olur.</p>
+    <form method="post" action="{{ url_for('accsec.twofa') }}">
+      {{ csrf_field() }}<input type="hidden" name="action" value="regen">
+      <div class="field"><label for="rg_pw">Şifre</label><input type="password" id="rg_pw" name="password" required autocomplete="current-password"></div>
+      <div class="field"><label for="rg_code">Doğrulama uygulamasındaki kod</label><input type="text" id="rg_code" name="code" required inputmode="numeric" maxlength="8" autocomplete="one-time-code"></div>
+      <button class="btn btn-sm" type="submit">Yeni Kodlar Oluştur</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3 class="mt0">İki adımlı doğrulamayı kapat</h3>
+    <p class="muted small">Hesabın yalnızca şifreyle korunur. Şifre ve doğrulama kodu (ya da yedek kod) gerekir.</p>
+    <form method="post" action="{{ url_for('accsec.twofa') }}" data-confirm="İki adımlı doğrulama kapatılsın mı?">
+      {{ csrf_field() }}<input type="hidden" name="action" value="disable">
+      <div class="field"><label for="ds_pw">Şifre</label><input type="password" id="ds_pw" name="password" required autocomplete="current-password"></div>
+      <div class="field"><label for="ds_code">Kod veya yedek kod</label><input type="text" id="ds_code" name="code" required maxlength="16" autocomplete="one-time-code"></div>
+      <button class="btn btn-sm btn-ghost" type="submit">Kapat</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <h3 class="mt0">1. Doğrulama uygulamanı bağla</h3>
+  <p class="muted">Google Authenticator, Microsoft Authenticator, Authy gibi bir uygulamada yeni hesap ekle ve QR kodu okut. QR okutamazsan anahtarı elle gir.</p>
+  <div class="qr-box">
+    {% if qr %}<div>{{ qr }}</div>{% endif %}
+    <div style="flex:1;min-width:220px">
+      <div class="muted small mb">Kurulum anahtarı (zaman tabanlı, 6 hane)</div>
+      <div class="qr-key">{{ secret_text }}</div>
+    </div>
+  </div>
+  <h3>2. Kodu doğrula</h3>
+  <form method="post" action="{{ url_for('accsec.twofa') }}">
+    {{ csrf_field() }}<input type="hidden" name="action" value="enable">
+    <div class="field" style="max-width:260px"><label for="code">Uygulamadaki 6 haneli kod</label><input class="code-input" type="text" id="code" name="code" required inputmode="numeric" maxlength="8" autocomplete="one-time-code" autofocus></div>
+    <button class="btn" type="submit">Etkinleştir</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

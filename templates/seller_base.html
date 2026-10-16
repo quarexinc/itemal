@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, ic with context %}
+{% block body_class %} class="app"{% endblock %}
+{% block site_header %}{% endblock %}
+{% block site_footer %}{% endblock %}
+{% block content %}
+{% set ep = request.endpoint or '' %}
+<div class="shell">
+  <aside class="s-side" id="s-side">
+    <a class="brand" href="{{ url_for('index') }}"><img class="brand-mark" src="{{ url_for('static', filename='logo.svg') }}" width="32" height="32" alt="">{{ site_name }}</a>
+    <div class="who">{{ avatar(me.username, me.avatar, 'sm') }}<div><b>{{ me.store_name or me.username }}{{ pkg_marks(me.id) }}</b><small>@{{ me.username }}</small></div></div>
+    <nav>
+      <div class="sep">Yönetim</div>
+      <a class="{{ 'on' if ep == 'seller.dashboard' }}" href="{{ url_for('seller.dashboard') }}">{{ ic('chart') }}Genel bakış</a>
+      <a class="{{ 'on' if ep in ['seller.listings', 'seller.listing_edit', 'seller.stock'] }}" href="{{ url_for('seller.listings') }}">{{ ic('tag') }}İlanlarım{% if s_nav.lowstock %}<span class="cnt warn" title="Stoğu azalan ilan">{{ s_nav.lowstock }}</span>{% endif %}</a>
+      <a class="{{ 'on' if ep == 'seller.listing_new' }}" href="{{ url_for('seller.listing_new') }}">{{ ic('plus') }}Yeni ilan</a>
+      <a class="{{ 'on' if ep in ['seller.doping', 'seller.doping_buy'] }}" href="{{ url_for('seller.doping') }}">{{ ic('flame') }}Doping</a>
+      <a class="{{ 'on' if ep == 'seller.sales' }}" href="{{ url_for('seller.sales') }}">{{ ic('receipt') }}Satışlarım</a>
+      <a class="{{ 'on' if ep == 'seller.earnings' }}" href="{{ url_for('seller.earnings') }}">{{ ic('wallet') }}Kazançlarım{% if s_nav.held %}<span class="cnt" title="Emanetteki sipariş">{{ s_nav.held }}</span>{% endif %}</a>
+      <a class="{{ 'on' if ep == 'seller.reviews' }}" href="{{ url_for('seller.reviews') }}">{{ ic('star') }}Yorumlar{% if s_nav.unreplied %}<span class="cnt" title="Yanıt bekleyen yorum">{{ s_nav.unreplied }}</span>{% endif %}</a>
+      <a class="{{ 'on' if ep == 'seller.commission' }}" href="{{ url_for('seller.commission') }}">{{ ic('percent') }}Komisyon</a>
+      <a class="{{ 'on' if ep in ['seller.packages', 'seller.package_buy'] }}" href="{{ url_for('seller.packages') }}">{{ ic('award') }}Paketler</a>
+      <div class="sep">Mağaza</div>
+      <a class="{{ 'on' if ep == 'seller.store' }}" href="{{ url_for('seller.store') }}">{{ ic('store') }}Mağaza profili</a>
+      <a class="{{ 'on' if ep == 'seller.showcase' }}" href="{{ url_for('seller.showcase') }}">{{ ic('image') }}Vitrin ve adres</a>
+      <a class="{{ 'on' if ep == 'seller.customers' }}" href="{{ url_for('seller.customers') }}">{{ ic('users') }}Müşterilerim</a>
+      <a class="{{ 'on' if ep == 'seller.followers' }}" href="{{ url_for('seller.followers') }}">{{ ic('heart') }}Takipçilerim</a>
+      <a class="{{ 'on' if ep == 'seller.giveaways' }}" href="{{ url_for('seller.giveaways') }}">{{ ic('gift') }}Çekilişlerim</a>
+      <a class="{{ 'on' if ep == 'seller.api_keys' }}" href="{{ url_for('seller.api_keys') }}">{{ ic('code') }}API erişimi</a>
+      <a href="{{ url_for('storefront', username=me.username) }}" target="_blank" rel="noopener">{{ ic('external') }}Herkese açık sayfa</a>
+      <div class="sep">Hesap</div>
+      <a href="{{ url_for('withdraw') }}">{{ ic('wallet') }}Para çek</a>
+      <a href="{{ url_for('inbox') }}">{{ ic('message') }}Mesajlar{% if unread_chat %}<span class="cnt">{{ unread_chat }}</span>{% endif %}</a>
+      <a href="{{ url_for('tickets') }}">{{ ic('life-buoy') }}Destek{% if answered_tickets %}<span class="cnt">{{ answered_tickets }}</span>{% endif %}</a>
+      <a href="{{ url_for('account') }}">{{ ic('user') }}Alıcı hesabım</a>
+      <a href="{{ url_for('index') }}">{{ ic('home') }}Siteye dön</a>
+    </nav>
+  </aside>
+  <div class="s-main">
+    <div class="s-top">
+      <div class="row">
+        <button class="ibtn a-toggle" type="button" data-toggle-nav="#s-side" aria-label="Menü">{{ ic('menu') }}</button>
+        <span class="tag-seller">SATICI PANELİ</span>
+      </div>
+      <div class="row">
+        <a class="chip" href="{{ url_for('withdraw') }}" title="Bakiyen">{{ ic('wallet') }}{{ me.balance|money }}</a>
+        <a class="ibtn" href="{{ url_for('site.notifications') }}" aria-label="Bildirimler">{{ ic('bell') }}{% if notif_unread %}<span class="dot">{{ notif_unread if notif_unread < 10 else '9+' }}</span>{% endif %}</a>
+        <a class="btn btn-sm" href="{{ url_for('seller.listing_new') }}">{{ ic('plus') }}Yeni ilan</a>
+      </div>
+    </div>
+    {% block panel %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

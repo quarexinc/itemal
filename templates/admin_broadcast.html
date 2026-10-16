@@ -1,0 +1,33 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import empty, ic with context %}
+{% block heading %}Duyuru gönder{% endblock %}
+{% block panel %}
+<div class="two-col">
+  <div class="card">
+    <h3 class="mt0">Uygulama içi bildirim</h3>
+    <p class="muted">Bildirim, kullanıcının üst menüdeki çan simgesinde ve Bildirimler sayfasında görünür.</p>
+    <form method="post" action="{{ url_for('admin.broadcast') }}" data-confirm="Bildirim gönderilsin mi?">
+      {{ csrf_field() }}
+      <div class="field"><label for="audience">Hedef kitle</label>
+        <select id="audience" name="audience">
+          <option value="all" {{ 'selected' if form.audience == 'all' }}>Tüm kullanıcılar ({{ counts.everyone }})</option>
+          <option value="sellers" {{ 'selected' if form.audience == 'sellers' }}>Yalnızca satıcılar ({{ counts.sellers }})</option>
+          <option value="buyers" {{ 'selected' if form.audience == 'buyers' }}>Alışveriş yapmış alıcılar ({{ counts.buyers }})</option>
+          <option value="user" {{ 'selected' if form.audience == 'user' }}>Tek kullanıcı</option>
+        </select></div>
+      <div class="field"><label for="username">Kullanıcı adı (tek kullanıcı seçtiysen)</label><input type="text" id="username" name="username" value="{{ form.username }}" maxlength="30"></div>
+      <div class="field"><label for="title">Başlık</label><input type="text" id="title" name="title" value="{{ form.title }}" required maxlength="100"></div>
+      <div class="field"><label for="body">Metin</label><textarea id="body" name="body" maxlength="280" style="min-height:90px">{{ form.body }}</textarea></div>
+      <div class="field"><label for="link">Bağlantı (isteğe bağlı)</label><input type="text" id="link" name="link" value="{{ form.link }}" maxlength="200" placeholder="/ilanlar?kategori=discord"></div>
+      <button class="btn" type="submit">{{ ic('send') }}Gönder</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3 class="mt0">Son gönderimler</h3>
+    {% if history %}<div class="table-wrap"><table>
+      {% for h in history %}<tr><td>{{ h.detail[:80] }}</td><td class="nowrap muted small right">{{ h.created_at|dt }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Henüz duyuru gönderilmedi') }}{% endif %}
+    <p class="muted small mt">Sitenin en üstündeki duyuru çubuğu için <a href="{{ url_for('admin.site_settings') }}">Site ayarları</a> sayfasındaki Duyuru alanını kullan.</p>
+  </div>
+</div>
+{% endblock %}

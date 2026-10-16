@@ -1,0 +1,18 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import pager, empty, avatar %}
+{% block title %}Takipçilerim{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Takipçilerim</h1></div>
+<div class="grid g3 mb">
+  <div class="stat"><div class="k">Takipçi</div><div class="v">{{ total }}</div></div>
+  <div class="stat good"><div class="k">Son 7 gün</div><div class="v">+{{ week }}</div></div>
+  <div class="stat"><div class="k">Alışveriş yapmış takipçi</div><div class="v">{{ buyers }}</div><div class="s">{% if total %}%{{ (buyers * 100 / total)|round|int }}{% endif %}</div></div>
+</div>
+<p class="muted">Takipçilerin yeni çekilişlerinden haberdar edilir ve yeni ilanlarında bildirim alır. Daha fazla takipçi için mağaza adresini paylaş ve çekiliş düzenle.</p>
+{% if page.rows %}
+<div class="table-wrap"><table>
+  <tr><th>Kullanıcı</th><th>Takip tarihi</th><th class="right">Sipariş</th></tr>
+  {% for f in page.rows %}<tr><td><div class="row" style="flex-wrap:nowrap">{{ avatar(f.username, f.avatar, 'sm') }}<b>{{ f.username }}</b></div></td><td class="nowrap">{{ f.since|dt }}</td><td class="right">{{ f.orders }}</td></tr>{% endfor %}
+</table></div>{{ pager(page) }}
+{% else %}<div class="card">{{ empty('Henüz takipçin yok', 'Mağaza adresini paylaşarak ve çekiliş düzenleyerek takipçi kazan.') }}</div>{% endif %}
+{% endblock %}

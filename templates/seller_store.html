@@ -1,0 +1,52 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import avatar, badge_list %}
+{% block title %}Mağazam{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Mağaza profilim</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('storefront', username=me.username) }}">Herkese açık sayfa</a></div>
+<div class="card mb">
+  <div class="spread"><div><b>Mağaza adresin:</b> <span class="mono">{{ store_url(me) }}</span></div><div class="row"><button type="button" class="btn btn-ghost btn-sm" data-copy="{{ store_url(me) }}">Kopyala</button><a class="btn btn-sm" href="{{ url_for('seller.showcase') }}">Adresi ve vitrini düzenle</a></div></div>
+</div>
+<div class="card mb">
+  <div class="store-head">
+    {{ avatar(me.username, me.avatar, 'lg') }}
+    <div style="flex:1;min-width:240px">
+      <h2 style="margin-bottom:.2em">{{ me.store_name or me.username }}{{ pkg_marks(me.id) }}</h2>
+      {{ badge_list(badges) }}
+    </div>
+  </div>
+  <hr>
+  <form method="post" action="{{ url_for('seller.store') }}" enctype="multipart/form-data" class="row">
+    {{ csrf_field() }}<input type="hidden" name="action" value="avatar">
+    <div class="field" style="flex:1;min-width:240px;margin:0"><label for="avatar">Mağaza profil fotoğrafı / logo</label><input type="file" id="avatar" name="avatar" accept="image/jpeg,image/png,image/webp" required></div>
+    <button class="btn btn-sm" type="submit">Yükle</button>
+  </form>
+  {% if me.avatar %}<form method="post" action="{{ url_for('seller.store') }}" class="mt">{{ csrf_field() }}<input type="hidden" name="action" value="avatar_remove"><button class="link-btn link-danger" type="submit">Fotoğrafı kaldır</button></form>{% endif %}
+</div>
+<div class="card mb">
+  <h3 class="mt0">Mağaza kapak görseli</h3>
+  <p class="muted small">Mağaza sayfanın üstünde görünür. Geniş (4:1) bir görsel kullan; otomatik kırpılır.</p>
+  {% if me.store_banner %}<img class="store-banner-prev" src="{{ url_for('media_cover', name=me.store_banner) }}" alt="">{% endif %}
+  <form method="post" action="{{ url_for('seller.store') }}" enctype="multipart/form-data" class="row">
+    {{ csrf_field() }}<input type="hidden" name="action" value="banner">
+    <div class="field" style="flex:1;min-width:240px;margin:0"><input type="file" name="banner" accept="image/jpeg,image/png,image/webp" required aria-label="Kapak görseli"></div>
+    <button class="btn btn-sm" type="submit">Yükle</button>
+  </form>
+  {% if me.store_banner %}<form method="post" action="{{ url_for('seller.store') }}" class="mt">{{ csrf_field() }}<input type="hidden" name="action" value="banner_remove"><button class="link-btn link-danger" type="submit">Kapak görselini kaldır</button></form>{% endif %}
+</div>
+<div class="card mb">
+  <form method="post" action="{{ url_for('seller.store') }}"{% if name_fee %} data-fee-field="store_name" data-fee-confirm="Mağaza adını değiştirmek {{ name_fee|money }} tutarında ücretlidir ve bakiyenden düşülür. Onaylıyor musun?"{% endif %}>
+    {{ csrf_field() }}<input type="hidden" name="action" value="store">
+    <div class="field"><label for="store_name">Mağaza adı</label><input type="text" id="store_name" name="store_name" value="{{ me.store_name }}" required minlength="3" maxlength="40">{% if name_fee %}<div class="hint fee-note">Mağaza adını değiştirmek <b>{{ name_fee|money }}</b> ücretlidir ve bakiyenden düşülür. Açıklamayı değiştirmek ücretsizdir.</div>{% endif %}</div>
+    <div class="field"><label for="store_desc">Mağaza açıklaması</label><textarea id="store_desc" name="store_desc" maxlength="500">{{ me.store_desc }}</textarea></div>
+    <button class="btn" type="submit">Kaydet</button>
+  </form>
+</div>
+<div class="card">
+  <h3 class="mt0">Rozetler nasıl kazanılır?</h3>
+  <ul class="muted">
+    <li><b>Onaylı Satıcı</b>: satıcı başvurun onaylanınca otomatik verilir. <b>Kimliği Doğrulandı</b>: ilk para çekiminde kimlik bilgilerin onaylanınca eklenir.</li>
+    <li><b>Güvenilir Satıcı</b>: en az {{ cfg.trusted_min_sales }} satış, en az 5 yorum ve {{ cfg.trusted_min_rating }} ve üzeri ortalama puan ile otomatik kazanılır.</li>
+    <li><b>Mağaza Üyesi</b> ve <b>Yıldız Satıcı</b>: yönetim tarafından verilir.</li>
+  </ul>
+</div>
+{% endblock %}

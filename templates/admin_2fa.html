@@ -1,0 +1,12 @@
+{% extends "admin_authbase.html" %}
+{% block heading %}İki adımlı doğrulama{% endblock %}
+{% block panel %}
+<p class="muted" style="margin-top:0">Authenticator uygulamandaki 6 haneli kodu gir. Telefonuna erişemiyorsan yedek kodlardan birini yaz.</p>
+<form method="post" action="{{ url_for('admin.verify') }}" autocomplete="off">
+  {{ csrf_field() }}
+  <div class="field"><label for="code">Doğrulama kodu</label><input class="tf-input" type="text" id="code" name="code" required autofocus autocomplete="one-time-code" inputmode="text" maxlength="16" spellcheck="false" placeholder="000000"></div>
+  <button class="btn btn-block" type="submit">Doğrula</button>
+</form>
+<p class="small muted" style="margin:14px 0 8px">Bu adımı yaklaşık {{ minutes_left }} dakika içinde tamamla; aksi halde yeniden giriş yapman gerekir.</p>
+<form class="inline-form" method="post" action="{{ url_for('admin.logout') }}">{{ csrf_field() }}<button class="btn btn-ghost btn-sm" type="submit">Vazgeç</button></form>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import empty, ic with context %}
+{% block title %}Ödeme Yöntemleri{% endblock %}
+{% block heading %}Ödeme yöntemleri{% endblock %}
+{% block panel %}
+<div class="grid g4 mb">
+  <div class="stat good"><div class="k">Onaylanan yükleme</div><div class="v">{{ totals.ok_sum|money }}</div><div class="s">{{ totals.ok_n or 0 }} işlem</div></div>
+  <div class="stat warn"><div class="k">Bekleyen yükleme</div><div class="v">{{ totals.pend_sum|money }}</div><div class="s"><a href="{{ url_for('admin.deposits', durum='pending') }}">{{ totals.pend_n or 0 }} talep - incele</a></div></div>
+  <div class="stat"><div class="k">Aktif yöntem</div><div class="v">{{ methods|selectattr('is_active')|list|length }}</div><div class="s">{{ methods|length }} yöntemden</div></div>
+  <div class="stat"><div class="k">Ödeme linkleri</div><div class="v"><a href="{{ url_for('admin.admin_paylinks') }}" style="font-size:1rem">Yönet</a></div><div class="s">Hazır ödeme sayfası bağlantıları</div></div>
+</div>
+<div class="notice warn mb">Hazır gelen yöntemler pasif durumdadır ve içindeki bilgiler örnektir. Kendi IBAN veya cüzdan bilgilerini girip yöntemi aktifleştirmeden kullanıcılar bakiye yükleyemez.</div>
+
+<div class="card mb">
+  <h3 class="mt0">Hazır şablondan ekle</h3>
+  <p class="muted small mt0">Şablon pasif olarak eklenir; ödeme bilgilerini düzenleyip aktifleştirmen yeterli.</p>
+  <form method="post" action="{{ url_for('admin.payments') }}" class="row">
+    {{ csrf_field() }}<input type="hidden" name="action" value="add_template">
+    <select name="template" aria-label="Şablon" style="width:auto;min-width:260px">{% for tp in templates %}<option value="{{ tp[0] }}">{{ tp[1] }}</option>{% endfor %}</select>
+    <button class="btn" type="submit">{{ ic('plus') }}Şablonu ekle</button>
+  </form>
+</div>
+
+<details class="card mb pm-new"><summary><b>{{ ic('plus') }} Özel yöntem ekle</b></summary>
+  <form method="post" action="{{ url_for('admin.payments') }}" class="mt">
+    {{ csrf_field() }}<input type="hidden" name="action" value="add">
+    <div class="form-row">
+      <div class="field"><label for="n-name">Ad</label><input type="text" id="n-name" name="name" required maxlength="60" placeholder="Örn. Banka havalesi / EFT"></div>
+      <div class="field"><label for="n-kind">Tür</label><select id="n-kind" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label for="n-details">Ödeme bilgileri (her satır "Etiket: değer" olursa kullanıcıda kopyala düğmesi çıkar)</label><textarea id="n-details" name="details" required maxlength="600" placeholder="Banka: ...&#10;Hesap sahibi: ...&#10;IBAN: TR00 ..."></textarea></div>
+    <div class="field"><label for="n-inst">Kullanıcıya talimat</label><textarea id="n-inst" name="instructions" maxlength="600" placeholder="Örn. Açıklama kısmına kullanıcı adını yaz."></textarea></div>
+    <div class="form-row">
+      <div class="field"><label for="n-min">Minimum tutar (TL)</label><input type="text" inputmode="decimal" id="n-min" name="min_amount" value="0"></div>
+      <div class="field"><label for="n-max">Maksimum tutar (TL, boş = sınırsız)</label><input type="text" inputmode="decimal" id="n-max" name="max_amount" value=""></div>
+      <div class="field"><label for="n-bonus">Yükleme bonusu (%)</label><input type="text" inputmode="decimal" id="n-bonus" name="bonus_percent" value="0"></div>
+      <div class="field"><label for="n-eta">Tahmini süre</label><input type="text" id="n-eta" name="eta" maxlength="40" placeholder="5-30 dk"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="n-badge">Rozet (isteğe bağlı)</label><input type="text" id="n-badge" name="badge" maxlength="24" placeholder="Önerilen"></div>
+      <div class="field"><label for="n-icon">Simge</label><select id="n-icon" name="icon">{% for i in icons %}<option value="{{ i }}">{{ i }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="n-color">Renk</label><input type="color" id="n-color" name="color" value="#7c5cff"></div>
+      <div class="field"><label for="n-ord">Sıra</label><input type="number" id="n-ord" name="sort_order" value="0"></div>
+    </div>
+    <label class="check field"><input type="checkbox" name="is_active" value="1"> <span>Hemen aktif olsun</span></label>
+    <button class="btn" type="submit">Ekle</button>
+  </form>
+</details>
+
+{% for m in methods %}{% set st = stats.get(m.id) %}
+<div class="card mb pm-admin" style="--c:{{ m.color or '#7c5cff' }}">
+  <div class="spread mb">
+    <div class="row"><span class="pm-ico">{{ ic(m.icon or 'wallet') }}</span><div><h3 style="margin:0">{{ m.name }}{% if m.badge %} <span class="badge b-info">{{ m.badge }}</span>{% endif %}</h3>
+      <div class="small muted">{% if st %}{{ st.ok_n or 0 }} onaylı ({{ st.ok_sum|money }}){% if st.pend_n %} &middot; <b>{{ st.pend_n }} bekleyen</b>{% endif %}{% else %}Henüz yükleme yok{% endif %}</div></div></div>
+    <div class="row">
+      <span class="badge b-{{ 'ok' if m.is_active else 'muted' }}">{{ 'Aktif' if m.is_active else 'Pasif' }}</span>
+      <form method="post" action="{{ url_for('admin.payments') }}">{{ csrf_field() }}<input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="{{ m.id }}"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Pasife al' if m.is_active else 'Aktifleştir' }}</button></form>
+    </div>
+  </div>
+  <form method="post" action="{{ url_for('admin.payments') }}">
+    {{ csrf_field() }}<input type="hidden" name="action" value="edit"><input type="hidden" name="id" value="{{ m.id }}">
+    <div class="form-row">
+      <div class="field"><label for="name{{ m.id }}">Ad</label><input type="text" id="name{{ m.id }}" name="name" value="{{ m.name }}" required maxlength="60"></div>
+      <div class="field"><label for="kind{{ m.id }}">Tür</label><select id="kind{{ m.id }}" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if m.kind == k }}>{{ v }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label for="det{{ m.id }}">Ödeme bilgileri</label><textarea id="det{{ m.id }}" name="details" required maxlength="600">{{ m.details }}</textarea></div>
+    <div class="field"><label for="ins{{ m.id }}">Kullanıcıya talimat</label><textarea id="ins{{ m.id }}" name="instructions" maxlength="600">{{ m.instructions }}</textarea></div>
+    <div class="form-row">
+      <div class="field"><label for="min{{ m.id }}">Minimum tutar (TL)</label><input type="text" inputmode="decimal" id="min{{ m.id }}" name="min_amount" value="{{ m.min_amount|plain }}"></div>
+      <div class="field"><label for="max{{ m.id }}">Maksimum tutar (TL, boş = sınırsız)</label><input type="text" inputmode="decimal" id="max{{ m.id }}" name="max_amount" value="{{ m.max_amount|plain if m.max_amount else '' }}"></div>
+      <div class="field"><label for="bon{{ m.id }}">Yükleme bonusu (%)</label><input type="text" inputmode="decimal" id="bon{{ m.id }}" name="bonus_percent" value="{{ '%g'|format(m.bonus_percent) }}"></div>
+      <div class="field"><label for="eta{{ m.id }}">Tahmini süre</label><input type="text" id="eta{{ m.id }}" name="eta" value="{{ m.eta }}" maxlength="40" placeholder="5-30 dk"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="bdg{{ m.id }}">Rozet</label><input type="text" id="bdg{{ m.id }}" name="badge" value="{{ m.badge }}" maxlength="24"></div>
+      <div class="field"><label for="ico{{ m.id }}">Simge</label><select id="ico{{ m.id }}" name="icon">{% for i in icons %}<option value="{{ i }}" {{ 'selected' if (m.icon or '') == i }}>{{ i }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="clr{{ m.id }}">Renk</label><input type="color" id="clr{{ m.id }}" name="color" value="{{ m.color or '#7c5cff' }}"></div>
+      <div class="field"><label for="ord{{ m.id }}">Sıra</label><input type="number" id="ord{{ m.id }}" name="sort_order" value="{{ m.sort_order }}"></div>
+    </div>
+    <label class="check field"><input type="checkbox" name="is_active" value="1" {{ 'checked' if m.is_active }}> <span>Aktif (kullanıcılara gösterilir)</span></label>
+    <div class="row"><button class="btn" type="submit">Kaydet</button></div>
+  </form>
+  <form method="post" action="{{ url_for('admin.payments') }}" class="mt" data-confirm="Bu yöntem silinsin mi?">{{ csrf_field() }}<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ m.id }}"><button class="link-btn link-danger" type="submit">Yöntemi sil</button></form>
+</div>
+{% else %}<div class="card">{{ empty('Ödeme yöntemi yok', 'Yukarıdan hazır bir şablon ekleyebilirsin.') }}</div>{% endfor %}
+{% endblock %}

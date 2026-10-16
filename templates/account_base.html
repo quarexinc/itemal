@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar, ic with context %}
+{% block content %}
+{% set ep = request.endpoint or '' %}
+<div class="container layout">
+  <aside class="side">
+    <div class="side-user">{{ avatar(me.username, me.avatar) }}<div><b>{{ me.username }}{{ pkg_marks(me.id) }}</b><small>{{ me.email }}</small></div></div>
+    <nav>
+      <a class="{{ 'on' if ep == 'account' }}" href="{{ url_for('account') }}">{{ ic('home') }}Genel Bakış</a>
+      <a class="{{ 'on' if ep == 'balance' }}" href="{{ url_for('balance') }}">{{ ic('download') }}Bakiye Yükle</a>
+      <a class="{{ 'on' if ep == 'withdraw' }}" href="{{ url_for('withdraw') }}">{{ ic('upload') }}Para Çek</a>
+      <a class="{{ 'on' if ep in ['orders', 'order_detail'] }}" href="{{ url_for('orders') }}">{{ ic('receipt') }}Siparişlerim</a>
+      <a class="{{ 'on' if ep == 'site.favorites' }}" href="{{ url_for('site.favorites') }}">{{ ic('heart') }}Favorilerim</a>
+      <a class="{{ 'on' if ep == 'transactions' }}" href="{{ url_for('transactions') }}">{{ ic('history') }}Hesap Hareketleri</a>
+      <a class="{{ 'on' if ep in ['inbox', 'chat'] }}" href="{{ url_for('inbox') }}">{{ ic('message') }}Mesajlar{% if unread_chat %} <span class="dot-count">{{ unread_chat }}</span>{% endif %}</a>
+      <a class="{{ 'on' if ep == 'site.notifications' }}" href="{{ url_for('site.notifications') }}">{{ ic('bell') }}Bildirimler{% if notif_unread %} <span class="dot-count">{{ notif_unread }}</span>{% endif %}</a>
+      <a class="{{ 'on' if ep in ['tickets', 'ticket_new', 'ticket_view'] }}" href="{{ url_for('tickets') }}">{{ ic('life-buoy') }}Destek Talepleri{% if answered_tickets %} <span class="dot-count">{{ answered_tickets }}</span>{% endif %}</a>
+      <div class="sep">Hesap</div>
+      {% if can_sell %}<a href="{{ url_for('seller.dashboard') }}">{{ ic('store') }}Satıcı Paneli</a>{% else %}<a class="{{ 'on' if ep == 'seller_apply' }}" href="{{ url_for('seller_apply') }}">{{ ic('store') }}Satıcı Ol</a>{% endif %}
+      <a class="{{ 'on' if ep == 'profile' }}" href="{{ url_for('profile') }}">{{ ic('settings') }}Profil ve Güvenlik</a>
+    </nav>
+  </aside>
+  <section>{% block panel %}{% endblock %}</section>
+</div>
+{% endblock %}

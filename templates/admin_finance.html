@@ -1,0 +1,64 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import bars, empty %}
+{% block title %}Finans{% endblock %}
+{% block heading %}Finans ve kasa{% endblock %}
+{% block panel %}
+<div class="spread mb">
+  <div class="tabs" style="margin:0">{% for k, v in ranges.items() %}<a class="{{ 'on' if days == k }}" href="{{ url_for('admin.finance', gun=k) }}">{{ v }}</a>{% endfor %}</div>
+  <a class="btn btn-line" href="{{ url_for('admin.export', what='siparisler') }}">Siparişleri indir</a>
+</div>
+<div class="grid g4 mb">
+  <div class="stat good"><div class="k">Platform geliri</div><div class="v">{{ revenue|money }}</div><div class="s">Kupon maliyeti düşülünce {{ net_revenue|money }}</div></div>
+  <div class="stat"><div class="k">Satış komisyonu</div><div class="v">{{ rev.commission|money }}</div><div class="s">{{ rev.orders }} sipariş, ciro {{ rev.gmv|money }}</div></div>
+  <div class="stat"><div class="k">Doping geliri</div><div class="v">{{ rev.doping|money }}</div></div>
+  <div class="stat"><div class="k">Paket geliri</div><div class="v">{{ rev.packages|money }}</div><div class="s">Çekim kesintisi {{ rev.wd_fee|money }}</div></div>
+</div>
+<div class="card mb"><h3 class="mt0">Günlük platform geliri</h3>{{ bars(series, true) }}</div>
+
+<div class="grid g2 mb">
+  <div class="card">
+    <h3 class="mt0">Kasa durumu (tüm zamanlar)</h3>
+    <dl class="kv">
+      <dt>Onaylanan bakiye yüklemeleri</dt><dd class="pos">{{ cash.cash_in|money }}</dd>
+      <dt>Ödenen çekimler</dt><dd class="neg">-{{ cash.cash_out|money }}</dd>
+      <dt>Net nakit</dt><dd><b>{{ net_cash|money }}</b></dd>
+    </dl>
+    <hr>
+    <h4>Kullanıcılara borç (yükümlülük)</h4>
+    <dl class="kv">
+      <dt>Kullanıcı bakiyeleri</dt><dd>{{ cash.balances|money }}</dd>
+      <dt>Emanetteki satıcı alacakları</dt><dd>{{ cash.held|money }}</dd>
+      <dt>Bekleyen çekim talepleri</dt><dd>{{ cash.pending_wd|money }}</dd>
+      <dt>Toplam</dt><dd><b>{{ liabilities|money }}</b></dd>
+    </dl>
+    <hr>
+    <dl class="kv">
+      <dt>Yönetici bakiye düzeltmeleri</dt><dd>{{ cash.adjustments|money }}</dd>
+      <dt>Tahmini kasa farkı</dt><dd><b class="{{ 'pos' if est_profit >= 0 else 'neg' }}">{{ est_profit|money }}</b></dd>
+    </dl>
+    <p class="muted small">Tahmini kasa farkı = net nakit - borçlar + yönetici düzeltmeleri. Platformun elinde kalan (komisyon, doping, paket, kesinti) tutarla örtüşmesi beklenir; büyük bir sapma, kayıt dışı bir bakiye müdahalesine işaret eder.</p>
+  </div>
+  <div class="card">
+    <h3 class="mt0">Bekleyenler ve uyarılar</h3>
+    <dl class="kv">
+      <dt>Onay bekleyen yüklemeler</dt><dd>{{ cash.pending_dep|money }}</dd>
+      <dt>Onay bekleyen çekimler</dt><dd>{{ cash.pending_wd|money }}</dd>
+      <dt>Örnek hesaplarda biriken tutar</dt><dd class="muted">{{ cash.demo_balances|money }}</dd>
+    </dl>
+    {% if cash.pending_wd > net_cash and net_cash >= 0 %}<div class="notice warn">Bekleyen çekimler net nakdi aşıyor; ödemeden önce kasayı kontrol et.</div>{% endif %}
+    <hr>
+    <h3>İlk 8 mağaza (komisyon)</h3>
+    {% if top_stores %}<div class="table-wrap"><table>
+      <tr><th>Mağaza</th><th class="right">Sipariş</th><th class="right">Ciro</th><th class="right">Komisyon</th></tr>
+      {% for s in top_stores %}<tr><td><a href="{{ url_for('admin.user', uid=s.id) }}">{{ s.store_name or s.username }}</a></td><td class="right">{{ s.orders }}</td><td class="right nowrap">{{ s.gmv|money }}</td><td class="right nowrap">{{ s.fee|money }}</td></tr>{% endfor %}
+    </table></div>{% else %}{{ empty('Bu dönemde satış yok') }}{% endif %}
+  </div>
+</div>
+<div class="card">
+  <h3 class="mt0">Büyük hareketler (5.000 ₺ ve üzeri)</h3>
+  {% if big %}<div class="table-wrap"><table>
+    <tr><th>Tarih</th><th>Kullanıcı</th><th>Tür</th><th>Açıklama</th><th class="right">Tutar</th></tr>
+    {% for t in big %}<tr><td class="nowrap">{{ t.created_at|dt }}</td><td><a href="{{ url_for('admin.user', uid=t.uid) }}">{{ t.username }}</a></td><td>{{ kindlabel(t.kind) }}</td><td class="muted">{{ t.description[:60] }}</td><td class="right nowrap {{ 'pos' if t.amount > 0 else 'neg' }}">{{ t.amount|money }}</td></tr>{% endfor %}
+  </table></div>{% else %}{{ empty('Bu dönemde büyük hareket yok') }}{% endif %}
+</div>
+{% endblock %}

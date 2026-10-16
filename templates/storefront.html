@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_macros.html" import listing_card, pager, empty, avatar, badge_list, rating_line, stars, report_box, ic with context %}
+{% from "_community.html" import follow_btn, gw_card with context %}
+{% block title %}{{ seller.store_name or seller.username }}{% endblock %}
+{% block content %}
+<div class="container section{{ ' store-themed' if theme_css }}"{% if theme_css %} style="{{ theme_css }}"{% endif %}>
+  {% if vacation %}<div class="store-vac">{{ ic('clock') }}<span>Bu mağaza şu an tatilde{% if vacation_until %} ({{ vacation_until|dt(false) }} tarihine kadar){% endif %}. İlanlar görüntülenebilir ancak yeni sipariş alınmıyor.</span></div>{% endif %}
+  {% if seller.store_notice %}<div class="store-notice">{{ ic('megaphone') }}<span>{{ seller.store_notice }}</span></div>{% endif %}
+  {% set pk = pkg_tier(seller.id) %}
+  <div class="card store-card{{ ' has-banner' if seller.store_banner }}{{ ' pk-' ~ pk if pk }}">
+    {% if seller.store_banner %}<div class="store-banner"><img src="{{ url_for('media_cover', name=seller.store_banner) }}" alt=""></div>{% endif %}
+    <div class="store-head">
+      {{ avatar(seller.username, seller.avatar, 'lg') }}
+      <div class="grow-1">
+        <h1 class="mb0">{{ seller.store_name or seller.username }}{{ pkg_marks(seller.id) }}</h1>
+        <div class="muted small mb">@{{ seller.username }} &middot; {{ seller.created_at|dt(false) }} tarihinden beri üye</div>
+        {{ badge_list(badges) }}
+        {% if seller.store_desc %}<p class="mt pre">{{ seller.store_desc }}</p>{% endif %}
+        {% if socials %}<div class="store-links">{% for s in socials %}<a href="{{ s.url }}" target="_blank" rel="nofollow noopener noreferrer ugc">{{ ic(s.icon) }}{{ s.label }}</a>{% endfor %}</div>{% endif %}
+        <div class="store-links"><a href="#" data-copy="{{ store_link }}" onclick="return false">{{ ic('copy') }}Mağaza adresini kopyala</a></div>
+        {% if me and me.id != seller.id %}{{ report_box('user', url_for('trust.report_user', username=seller.username), 'Kullanıcıyı bildir') }}{% endif %}
+      </div>
+      <div class="store-side">
+        {% if not me or me.id != seller.id %}{{ follow_btn(seller.id, i_follow, followers) }}{% endif %}
+        <div class="grid g2 store-stats">
+          <div class="stat good"><div class="k">Başarılı işlem</div><div class="v">{{ ok_orders }}</div><div class="s">{% if ok_rate is not none %}%{{ ok_rate }} başarı oranı{% else %}Tamamlanan sipariş{% endif %}</div></div>
+          <div class="stat"><div class="k">Puan</div><div class="v">{{ stats.rating if stats.reviews else '-' }}</div><div class="s">{{ stats.reviews }} yorum</div></div>
+          <div class="stat"><div class="k">İlan</div><div class="v">{{ page.total }}</div></div>
+          <div class="stat"><div class="k">Takipçi</div><div class="v">{{ followers }}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if store_gws %}<div class="section-h mt"><h2>{{ ic('gift') }} Çekilişler</h2></div><div class="gw-grid">{% for gw in store_gws %}{{ gw_card(gw, false, gw_left(gw.ends_at)) }}{% endfor %}</div>{% endif %}
+  <div class="section-h mt"><h2>İlanlar</h2></div>
+  {% if page.rows %}<div class="lgrid">{% for l in page.rows %}{{ listing_card(l) }}{% endfor %}</div>{{ pager(page) }}
+  {% else %}<div class="card">{{ empty('Bu mağazanın aktif ilanı yok') }}</div>{% endif %}
+
+  <div class="card mt">
+    <div class="card-h"><h2>Son yorumlar</h2>{{ rating_line(stats.rating, stats.reviews) }}</div>
+    {% for r in reviews %}
+    <div class="review">
+      <div class="who">{{ stars(r.rating, true) }}<b>{{ r.buyer_name|mask }}</b><span class="muted small">{{ r.listing_title }} &middot; {{ r.created_at|dt(false) }}</span></div>
+      <div class="pre">{{ r.comment or 'Yorum yazılmadı.' }}</div>
+      {% if r.seller_reply %}<div class="reply"><b>Satıcı yanıtı:</b> {{ r.seller_reply }}</div>{% endif %}
+    </div>
+    {% else %}<p class="muted">Henüz yorum yok.</p>{% endfor %}
+  </div>
+
+  <div class="card mt" id="yorumlar">
+    <div class="card-h"><h2>Mağaza yorumları</h2><span class="muted small">{{ scomments|length }} yorum</span></div>
+    {% if me and me.id != seller.id and can_comment %}
+    <form method="post" action="{{ url_for('trust.seller_comment', username=seller.username) }}" class="mb">
+      {{ csrf_field() }}
+      <div class="field"><label for="body">{{ 'Yorumunu güncelle' if my_comment else 'Bu satıcı hakkında ne düşünüyorsun?' }}</label><textarea id="body" name="body" required minlength="5" maxlength="500" style="min-height:80px" placeholder="Deneyimini kısaca yaz">{{ my_comment.body if my_comment }}</textarea></div>
+      <button class="btn btn-sm" type="submit">{{ 'Güncelle' if my_comment else 'Yorum Yaz' }}</button>
+    </form>
+    {% elif not me %}<p class="muted"><a href="{{ url_for('login', next=request.path) }}">Giriş yap</a>; mağazadan alışveriş yaptıysan yorum bırakabilirsin.</p>
+    {% elif me.id != seller.id %}<p class="muted small mb">Mağaza yorumunu yalnızca bu satıcıdan alışveriş yapmış alıcılar yazabilir.</p>{% endif %}
+    {% for c in scomments %}
+    <div class="review">
+      <div class="who"><b>{{ c.author_name|mask }}</b>{{ pkg_marks(c.author_id) }}<span class="muted small">{{ c.created_at|dt(false) }}</span>
+        {% if me and me.id == c.author_id %}<form class="inline-form" method="post" action="{{ url_for('trust.seller_comment_delete', cid=c.id) }}" data-confirm="Yorumun silinsin mi?">{{ csrf_field() }}<button class="link-btn" type="submit">Sil</button></form>{% endif %}</div>
+      <div class="pre">{{ c.body }}</div>
+    </div>
+    {% else %}<p class="muted">Henüz mağaza yorumu yok.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

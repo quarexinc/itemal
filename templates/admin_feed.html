@@ -1,0 +1,24 @@
+{% extends "admin_base.html" %}
+{% from "_macros.html" import empty, ic with context %}
+{% block title %}Canlı akış{% endblock %}
+{% block heading %}Canlı akış{% endblock %}
+{% block panel %}
+<div class="tabs">
+  {% for k, v in kinds.items() %}<a class="{{ 'on' if kind == k }}" href="{{ url_for('admin.feed', tur=k or None) }}">{{ v }}</a>{% endfor %}
+</div>
+{% if rows %}
+<div class="card feed">
+  {% for r in rows %}
+  <div class="feed-row">
+    <i class="feed-dot k-{{ r.kind }}" aria-hidden="true"></i>
+    <div class="feed-main">
+      <div>{% if r.link %}<a href="{{ r.link }}">{{ r.title[:90] }}</a>{% else %}{{ r.title[:90] }}{% endif %}</div>
+      <div class="muted small">{{ r.sub }}</div>
+    </div>
+    <div class="right nowrap">{% if r.amount %}<b>{{ r.amount|money }}</b>{% endif %}<div class="muted small">{{ r.ts|dt }}</div></div>
+  </div>
+  {% endfor %}
+</div>
+<p class="muted small mt">Son olaylar, tüm türler birleşik ve zamana göre sıralı gösterilir. Sayfayı yenileyerek güncelleyebilirsin.</p>
+{% else %}<div class="card">{{ empty('Henüz olay yok') }}</div>{% endif %}
+{% endblock %}

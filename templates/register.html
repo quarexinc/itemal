@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ic with context %}
+{% block title %}Kayıt Ol{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="auth-wrap">
+    <div class="auth-art">
+      <div><a class="brand" href="{{ url_for('index') }}"><img class="brand-mark" src="{{ url_for('static', filename='logo.svg') }}" width="32" height="32" alt="">{{ site_name }}</a></div>
+      <div>
+        <h2>Dakikalar içinde alışverişe başla.</h2>
+        <ul>
+          <li>{{ ic('gift') }}<span>Discord, Steam, Roblox ve 35'ten fazla kategori</span></li>
+          <li>{{ ic('bell') }}<span>Sipariş ve destek bildirimleri</span></li>
+          <li>{{ ic('store') }}<span>İstersen satıcı olup kazanmaya başla</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="auth-form">
+      <h1>Hesap oluştur</h1>
+      <p class="muted">Ücretsiz üye ol.</p>
+      <form method="post" action="{{ url_for('register') }}">
+        {{ csrf_field() }}{{ form_guard('register') }}
+        <div class="field"><label for="username">Kullanıcı adı</label><input type="text" id="username" name="username" value="{{ form.username }}" required minlength="3" maxlength="20" autocomplete="username"><div class="hint">3-20 karakter; harf, rakam ve alt çizgi.</div></div>
+        <div class="field"><label for="email">E-posta</label><input type="email" id="email" name="email" value="{{ form.email }}" required autocomplete="email"></div>
+        <div class="form-row">
+          <div class="field"><label for="password">Şifre</label><input type="password" id="password" name="password" required minlength="8" autocomplete="new-password"></div>
+          <div class="field"><label for="password2">Şifre tekrar</label><input type="password" id="password2" name="password2" required minlength="8" autocomplete="new-password"></div>
+        </div>
+        <div class="hint" style="margin:-6px 0 14px">En az 8 karakter. Kullanıcı adını ve e-postanın ilk kısmını içeren ya da kolay tahmin edilen şifreler kabul edilmez.</div>
+        {{ captcha_block('register') }}
+        <label class="check field"><input type="checkbox" name="agree" value="1" required> <span><a href="{{ url_for('faq') }}">Kullanım koşullarını</a> okudum ve kabul ediyorum.</span></label>
+        <button class="btn btn-block btn-lg" type="submit">Kayıt Ol</button>
+      </form>
+      <p class="center muted mt">Zaten üye misin? <a href="{{ url_for('login') }}">Giriş yap</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

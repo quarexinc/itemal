@@ -1,0 +1,75 @@
+{% extends "seller_base.html" %}
+{% from "_macros.html" import badge, empty, ic with context %}
+{% block title %}Doping{% endblock %}
+{% block panel %}
+<div class="page-h"><h1>Doping</h1><a class="btn btn-ghost btn-sm" href="{{ url_for('seller.listings') }}">İlanlarım</a></div>
+<div class="notice">Dopingle ilanını vitrinlerde ve ana sayfa reklam panosunda öne çıkar. Ödeme bakiyenden yapılır; aynı türü süresi dolmadan tekrar alırsan süre mevcut bitişin üzerine eklenir.</div>
+
+<div class="grid g4 mb">
+  <div class="stat"><div class="k">Bakiyen</div><div class="v">{{ me.balance|money }}</div><div class="s"><a href="{{ url_for('balance') }}">Bakiye yükle</a></div></div>
+  <div class="stat"><div class="k">Aktif doping</div><div class="v">{{ active|length }}</div><div class="s">ilan + tür sayısı</div></div>
+  <div class="stat"><div class="k">Toplam harcama</div><div class="v">{{ total_spent|money }}</div></div>
+  <div class="stat {{ 'hot' if banner_used >= banner_max }}"><div class="k">Reklam panosu</div><div class="v">{{ banner_used }} / {{ banner_max }}</div><div class="s">{% if banner_used >= banner_max and banner_first_end %}En erken {{ banner_first_end|dt }} boşalır{% else %}dolu pano sayısı{% endif %}</div></div>
+</div>
+
+<div class="card mb">
+  <div class="card-h"><h3>Doping türleri ve fiyatlar</h3></div>
+  <div class="dp-price-grid">
+    {% for k in kinds %}
+    <div class="dp-price">
+      <b>{{ k.label }}</b>
+      <p class="muted small">{{ k.desc }}</p>
+      <ul>{% for o in k.options %}<li><span>{{ o.label }}</span><b>{{ o.price|money }}</b></li>{% endfor %}</ul>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card mb">
+  <div class="card-h"><h3>Aktif dopinglerim</h3></div>
+  {% if active %}
+  <div class="table-wrap"><table>
+    <tr><th>İlan</th><th>Doping</th><th>Durum</th><th>Bitiş</th><th></th></tr>
+    {% for a in active %}<tr>
+      <td><a href="{{ url_for('listing_detail', lid=a.listing_id) }}"><b>{{ a.title[:52] }}</b></a></td>
+      <td><span class="dp-tag dp-{{ a.kind }}">{{ ic('flame') }}{{ a.label }}</span></td>
+      <td>{% if a.live %}<span class="badge b-ok">Yayında</span>{% else %}<span class="badge b-muted">Sırada</span>{% endif %}{% if a.status != 'active' %} <span class="badge b-warn" title="İlan yayında olmadığı için doping gösterilmiyor">İlan {{ a.status|slabel|lower }}</span>{% endif %}</td>
+      <td class="nowrap">{{ a.ends_at|dt }}<div class="muted small">{{ a.ends_at|ago }}</div></td>
+      <td class="actions">{% if a.status == 'active' %}<a class="btn btn-line btn-sm" href="{{ url_for('seller.doping_buy', lid=a.listing_id) }}">Süre ekle</a>{% endif %}</td>
+    </tr>{% endfor %}
+  </table></div>
+  {% else %}{{ empty('Aktif dopingin yok', 'Aşağıdan bir ilan seçip doping satın alabilirsin.') }}{% endif %}
+</div>
+
+<div class="card mb">
+  <div class="card-h"><h3>İlan seç</h3></div>
+  {% if listings %}
+  <div class="table-wrap"><table>
+    <tr><th>İlan</th><th class="right">Stok</th><th>Durum</th><th>Doping</th><th></th></tr>
+    {% for l in listings %}<tr>
+      <td><div class="row" style="flex-wrap:nowrap"><div class="thumb">{% if l.cover %}<img src="{{ cover_url(l.cover, true) }}" alt="">{% endif %}</div><div><a href="{{ url_for('listing_detail', lid=l.id) }}"><b>{{ l.title[:52] }}</b></a><div class="muted small">{{ l.cat_name }}</div></div></div></td>
+      <td class="right"><span class="badge b-{{ 'bad' if l.stock == 0 else ('warn' if l.stock < 5 else 'ok') }}">{{ 'Tükendi' if l.stock == 0 else l.stock }}</span></td>
+      <td>{{ badge(l.status) }}</td>
+      <td>{% if l.dp %}<div class="dp-tags">{% for d in l.dp %}<span class="dp-tag dp-{{ d.kind }}" title="Bitiş {{ d.ends_at|dt }}">{{ ic('flame') }}{{ d.label }}</span>{% endfor %}</div>{% else %}<span class="muted small">Yok</span>{% endif %}</td>
+      <td class="actions">{% if l.status == 'active' and l.stock > 0 %}<a class="btn btn-dp btn-sm" href="{{ url_for('seller.doping_buy', lid=l.id) }}">{{ ic('flame') }}Doping al</a>{% else %}<span class="muted small">{{ 'Stok ekle' if l.status == 'active' else 'Yayında değil' }}</span>{% endif %}</td>
+    </tr>{% endfor %}
+  </table></div>
+  {% else %}{{ empty('Henüz ilanın yok', 'Doping almak için önce bir ilan yayınla.') }}<div class="mt"><a class="btn" href="{{ url_for('seller.listing_new') }}">Yeni ilan</a></div>{% endif %}
+</div>
+
+{% if history %}
+<div class="card">
+  <div class="card-h"><h3>Son satın almalar</h3></div>
+  <div class="table-wrap"><table>
+    <tr><th>Tarih</th><th>İlan</th><th>Doping</th><th>Süre</th><th class="right">Tutar</th></tr>
+    {% for h in history %}<tr>
+      <td class="nowrap">{{ h.created_at|dt }}</td>
+      <td>{{ h.title[:48] }}</td>
+      <td>{{ h.label }}</td>
+      <td>{{ h.hours_label }}</td>
+      <td class="right nowrap">{{ h.price|money }}</td>
+    </tr>{% endfor %}
+  </table></div>
+</div>
+{% endif %}
+{% endblock %}
