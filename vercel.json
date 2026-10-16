@@ -1,24 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index"
-    }
-  ],
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "templates/**",
-      "maxDuration": 30
-    }
-  },
+  "regions": ["hnd1"],
   "crons": [
-    {
-      "path": "/cron/gunluk",
-      "schedule": "0 3 * * *"
-    }
-  ],
-  "regions": [
-    "hnd1"
+    { "path": "/cron/gunluk", "schedule": "0 3 * * *" }
   ]
 }

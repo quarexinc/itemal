@@ -41,7 +41,7 @@ Kullanıcı, ilan, sipariş vb. tüm veriler `data/epin.db` (SQLite) dosyasında
 
 ## Vercel'e yayinlama
 
-Proje Vercel'de calisacak sekilde hazirdir: `api/index.py` (giris noktasi), `vercel.json` (yonlendirme, islev ayari, gunluk cron), `.python-version`, `requirements.txt`.
+Proje Vercel'de calisacak sekilde hazirdir: `app.py` (Flask giris noktasi, Vercel otomatik algilar), `vercel.json` (bolge ve gunluk cron), `.python-version`, `requirements.txt`.
 `templates/` ve `public/static/` depoda hazir bulunur (Vercel'de dosya sistemi salt okunurdur). Kodda sablon/CSS/JS degistirirsen gondermeden once `python manage.py build` calistir.
 
 1. Veritabani: Turso hesabi ac (turso.tech), `turso db create itemal`, `turso db show itemal --url`, `turso db tokens create itemal`. Yerel SQLite Vercel'de kalici degildir; gorseller de `media` tablosunda saklanir.
