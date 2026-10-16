@@ -51,6 +51,11 @@ DB_PATH = BASE_DIR / os.getenv("DATABASE_PATH", "data/epin.db")
 # Vercel (VERCEL=1 otomatik tanımlı) ya da SERVERLESS=1: kalıcı disk, arka plan iş parçacığı ve yazılabilir dosya sistemi yok
 ON_VERCEL = bool(os.getenv("VERCEL"))
 SERVERLESS = ON_VERCEL or os.getenv("SERVERLESS", "0") == "1"
+if ON_VERCEL and not dbm.remote():
+    raise RuntimeError(
+        "Vercel'de TURSO_DATABASE_URL ve TURSO_AUTH_TOKEN ortam degiskenleri tanimli olmali "
+        "(yerel SQLite dosyasi Vercel'de kalici degildir). README: 'Vercel'e yayinlama'."
+    )
 
 TR_OFFSET = timedelta(hours=3)  # Türkiye sabit UTC+3
 ADMIN_SESSION_SECONDS = 8 * 3600  # admin oturumu 8 saat sonra düşer
